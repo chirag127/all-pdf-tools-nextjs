@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { FiFileText, FiTool, FiLock, FiEdit, FiRefreshCw } from 'react-icons/fi';
 import { Card, CardGrid } from '@/components/common/Card';
 import Link from 'next/link';
+import ClientLayout from '@/components/common/ClientLayout';
 
 export default function PdfToolsPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export default function PdfToolsPage() {
 
   const handleCategoryClick = (categoryId: string) => {
     setActiveCategory(categoryId === activeCategory ? null : categoryId);
-    
+
     // Scroll to the category section if it's not already visible
     if (categoryId !== activeCategory) {
       const element = document.getElementById(categoryId);
@@ -84,65 +85,67 @@ export default function PdfToolsPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl font-bold">PDF Tools</h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
-          A comprehensive suite of tools to manage, edit, and enhance your PDF documents
-        </p>
-      </div>
+    <ClientLayout>
+      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold">PDF Tools</h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            A comprehensive suite of tools to manage, edit, and enhance your PDF documents
+          </p>
+        </div>
 
-      {/* Category navigation */}
-      <div className="mb-8 flex flex-wrap justify-center gap-2">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            className={`flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              activeCategory === category.id
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
-            }`}
-            onClick={() => handleCategoryClick(category.id)}
-          >
-            <span className="mr-2">{category.icon}</span>
-            {category.title}
-          </button>
-        ))}
-      </div>
+        {/* Category navigation */}
+        <div className="mb-8 flex flex-wrap justify-center gap-2">
+          {categories.map((category) => (
+            <button
+              key={category.id}
+              className={`flex items-center rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                activeCategory === category.id
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
+              }`}
+              onClick={() => handleCategoryClick(category.id)}
+            >
+              <span className="mr-2">{category.icon}</span>
+              {category.title}
+            </button>
+          ))}
+        </div>
 
-      {/* Tool categories */}
-      <div className="space-y-12">
-        {categories.map((category) => (
-          <section
-            key={category.id}
-            id={category.id}
-            className={`scroll-mt-20 transition-opacity duration-300 ${
-              activeCategory && activeCategory !== category.id ? 'opacity-50' : 'opacity-100'
-            }`}
-          >
-            <div className="mb-6">
-              <h2 className="flex items-center text-2xl font-bold">
-                <span className="mr-2">{category.icon}</span>
-                {category.title}
-              </h2>
-              <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
-            </div>
+        {/* Tool categories */}
+        <div className="space-y-12">
+          {categories.map((category) => (
+            <section
+              key={category.id}
+              id={category.id}
+              className={`scroll-mt-20 transition-opacity duration-300 ${
+                activeCategory && activeCategory !== category.id ? 'opacity-50' : 'opacity-100'
+              }`}
+            >
+              <div className="mb-6">
+                <h2 className="flex items-center text-2xl font-bold">
+                  <span className="mr-2">{category.icon}</span>
+                  {category.title}
+                </h2>
+                <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
+              </div>
 
-            <CardGrid columns={4}>
-              {category.tools.map((tool) => (
-                <Link key={tool.id} href={`/pdf-tools/${category.id}/${tool.id}`}>
-                  <Card className="h-full cursor-pointer transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-800">
-                    <div className="flex flex-col items-center text-center">
-                      <h3 className="text-lg font-medium">{tool.name}</h3>
-                      <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{tool.description}</p>
-                    </div>
-                  </Card>
-                </Link>
-              ))}
-            </CardGrid>
-          </section>
-        ))}
+              <CardGrid columns={4}>
+                {category.tools.map((tool) => (
+                  <Link key={tool.id} href={`/pdf-tools/${category.id}/${tool.id}`}>
+                    <Card className="h-full cursor-pointer transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-800">
+                      <div className="flex flex-col items-center text-center">
+                        <h3 className="text-lg font-medium">{tool.name}</h3>
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{tool.description}</p>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+              </CardGrid>
+            </section>
+          ))}
+        </div>
       </div>
-    </div>
+    </ClientLayout>
   );
 }
