@@ -3,33 +3,45 @@
  */
 
 // Base URL for the API
-const API_BASE_URL =
-    process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000/api/v1";
+const getApiBaseUrl = () => {
+    return (
+        process.env.NEXT_PUBLIC_BACKEND_API_URL ||
+        "http://localhost:8000/api/v1"
+    );
+};
 
 // PDF API endpoints
 const PDF_API = {
-    MERGE: `${API_BASE_URL}/pdf/merge`,
-    SPLIT: `${API_BASE_URL}/pdf/split`,
-    EXTRACT_PAGES: `${API_BASE_URL}/pdf/extract-pages`,
-    ROTATE: `${API_BASE_URL}/pdf/rotate`,
-    ADD_PAGE_NUMBERS: `${API_BASE_URL}/pdf/add-page-numbers`,
-    ADD_WATERMARK: `${API_BASE_URL}/pdf/add-watermark`,
-    CROP: `${API_BASE_URL}/pdf/crop`,
-    PROTECT: `${API_BASE_URL}/pdf/protect`,
-    UNLOCK: `${API_BASE_URL}/pdf/unlock`,
-    COMPRESS: `${API_BASE_URL}/pdf/compress`,
-    REPAIR: `${API_BASE_URL}/pdf/repair`,
-    DOWNLOAD: `${API_BASE_URL}/pdf/download`,
-    DOWNLOAD_ZIP: `${API_BASE_URL}/pdf/download-zip`,
+    MERGE: `${getApiBaseUrl()}/pdf/merge`,
+    SPLIT: `${getApiBaseUrl()}/pdf/split`,
+    EXTRACT_PAGES: `${getApiBaseUrl()}/pdf/extract-pages`,
+    ROTATE: `${getApiBaseUrl()}/pdf/rotate`,
+    ADD_PAGE_NUMBERS: `${getApiBaseUrl()}/pdf/add-page-numbers`,
+    ADD_WATERMARK: `${getApiBaseUrl()}/pdf/add-watermark`,
+    CROP: `${getApiBaseUrl()}/pdf/crop`,
+    PROTECT: `${getApiBaseUrl()}/pdf/protect`,
+    UNLOCK: `${getApiBaseUrl()}/pdf/unlock`,
+    COMPRESS: `${getApiBaseUrl()}/pdf/compress`,
+    REPAIR: `${getApiBaseUrl()}/pdf/repair`,
+    ORGANIZE: `${getApiBaseUrl()}/pdf/organize`,
+    CONVERT_TO_PDF: `${getApiBaseUrl()}/pdf/convert-to-pdf`,
+    CONVERT_FROM_PDF: `${getApiBaseUrl()}/pdf/convert-from-pdf`,
+    OCR: `${getApiBaseUrl()}/pdf/ocr`,
+    SCAN_TO_PDF: `${getApiBaseUrl()}/pdf/scan-to-pdf`,
+    SIGN: `${getApiBaseUrl()}/pdf/sign`,
+    REDACT: `${getApiBaseUrl()}/pdf/redact`,
+    COMPARE: `${getApiBaseUrl()}/pdf/compare`,
+    DOWNLOAD: `${getApiBaseUrl()}/pdf/download`,
+    DOWNLOAD_ZIP: `${getApiBaseUrl()}/pdf/download-zip`,
 };
 
 // AI API endpoints
 const AI_API = {
-    MODELS: `${API_BASE_URL}/ai/models`,
-    CHAT: `${API_BASE_URL}/ai/chat`,
-    SUMMARIZE: `${API_BASE_URL}/ai/summarize`,
-    TRANSLATE: `${API_BASE_URL}/ai/translate`,
-    GENERATE_QUESTIONS: `${API_BASE_URL}/ai/generate-questions`,
+    MODELS: `${getApiBaseUrl()}/ai/models`,
+    CHAT: `${getApiBaseUrl()}/ai/chat`,
+    SUMMARIZE: `${getApiBaseUrl()}/ai/summarize`,
+    TRANSLATE: `${getApiBaseUrl()}/ai/translate`,
+    GENERATE_QUESTIONS: `${getApiBaseUrl()}/ai/generate-questions`,
 };
 
 // Types for AI API
@@ -387,6 +399,177 @@ export const pdfApi = {
         });
 
         return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Organize pages in a PDF (reorder, delete, duplicate)
+     */
+    organizePdf: async (
+        file: File,
+        pageOrder: number[]
+    ): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("page_order", JSON.stringify(pageOrder));
+
+        const response = await fetch(PDF_API.ORGANIZE, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Convert a file to PDF
+     */
+    convertToPdf: async (file: File): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(PDF_API.CONVERT_TO_PDF, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Convert a PDF to another format
+     */
+    convertFromPdf: async (
+        file: File,
+        format: string
+    ): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("format", format);
+
+        const response = await fetch(PDF_API.CONVERT_FROM_PDF, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Perform OCR on a PDF to make it searchable
+     */
+    ocrPdf: async (
+        file: File,
+        language: string = "eng"
+    ): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("language", language);
+
+        const response = await fetch(PDF_API.OCR, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Convert scanned images to a PDF
+     */
+    scanToPdf: async (
+        files: File[],
+        ocr: boolean = false,
+        language: string = "eng"
+    ): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+
+        files.forEach((file, index) => {
+            formData.append(`files`, file);
+        });
+
+        formData.append("ocr", ocr.toString());
+        formData.append("language", language);
+
+        const response = await fetch(PDF_API.SCAN_TO_PDF, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Add a signature to a PDF
+     */
+    signPdf: async (
+        file: File,
+        signatureImage: string,
+        pageNumber: number,
+        position: { x: number; y: number }
+    ): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("signature_image", signatureImage);
+        formData.append("page_number", pageNumber.toString());
+        formData.append("position_x", position.x.toString());
+        formData.append("position_y", position.y.toString());
+
+        const response = await fetch(PDF_API.SIGN, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Redact text from a PDF
+     */
+    redactPdf: async (
+        file: File,
+        searchTerms: string[],
+        patterns: string[] = []
+    ): Promise<{ downloadUrl: string }> => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("search_terms", JSON.stringify(searchTerms));
+        formData.append("patterns", JSON.stringify(patterns));
+
+        const response = await fetch(PDF_API.REDACT, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{ downloadUrl: string }>(response);
+    },
+
+    /**
+     * Compare two PDFs and generate a comparison report
+     */
+    comparePdfs: async (
+        file1: File,
+        file2: File
+    ): Promise<{
+        downloadUrl: string;
+        addedCount: number;
+        removedCount: number;
+        changedCount: number;
+    }> => {
+        const formData = new FormData();
+        formData.append("file1", file1);
+        formData.append("file2", file2);
+
+        const response = await fetch(PDF_API.COMPARE, {
+            method: "POST",
+            body: formData,
+        });
+
+        return handleResponse<{
+            downloadUrl: string;
+            addedCount: number;
+            removedCount: number;
+            changedCount: number;
+        }>(response);
     },
 
     /**

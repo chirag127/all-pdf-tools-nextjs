@@ -2,7 +2,7 @@
 
 A comprehensive toolkit for all your PDF needs. Merge, split, edit, secure, and analyze your PDF documents with ease.
 
-**Last Updated:** 2025-05-20T20:00:59.203Z (UTC)
+**Last Updated:** 2025-05-20T22:21:07.368Z (UTC)
 
 ## Overview
 
@@ -154,6 +154,40 @@ The application is organized into six main feature areas:
 ## API Documentation
 
 The backend API documentation is available at [http://localhost:8000/docs](http://localhost:8000/docs) when the backend server is running.
+
+## Deployment
+
+### Backend Deployment
+
+The backend can be deployed to Render.com:
+
+1. Push your code to GitHub
+2. Create a new Web Service on Render.com
+3. Connect your GitHub repository
+4. Set the Root Directory to `backend`
+5. Set the Build Command to `pip install -r requirements.txt`
+6. Set the Start Command to `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+7. Add environment variables as needed
+
+### Frontend Deployment
+
+#### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Import your repository on Vercel
+3. Set the Root Directory to `frontend`
+4. Add environment variables from `.env.example`
+5. Deploy
+
+#### GitHub Pages
+
+The frontend can also be deployed to GitHub Pages:
+
+1. Configure GitHub repository settings for Pages
+2. Use the provided GitHub Actions workflow in `.github/workflows/deploy-gh-pages.yml`
+3. Add the `NEXT_PUBLIC_BACKEND_API_URL` secret in your repository settings
+
+For detailed instructions, see [GitHub Pages Deployment Guide](docs/github-pages-deployment.md).
 
 ## Project Structure
 
