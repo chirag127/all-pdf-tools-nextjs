@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiSettings, FiMoon, FiSun } from 'react-icons/fi';
@@ -9,6 +9,12 @@ import { useSettingsStore } from '@/lib/store';
 export default function Header() {
   const pathname = usePathname();
   const { darkMode, toggleDarkMode } = useSettingsStore();
+  const [mounted, setMounted] = useState(false);
+
+  // Only run on client side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Navigation items
   const navItems = [
@@ -51,26 +57,35 @@ export default function Header() {
           {/* Right side actions */}
           <div className="flex items-center space-x-4">
             {/* Theme toggle */}
-            <button
-              onClick={toggleDarkMode}
-              className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-              aria-label="Toggle dark mode"
-            >
-              {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
-            </button>
+            {mounted && (
+              <button
+                onClick={toggleDarkMode}
+                className="rounded-full p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+                aria-label="Toggle dark mode"
+              >
+                {darkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
+              </button>
+            )}
+            {!mounted && (
+              <div className="h-10 w-10 rounded-full p-2" aria-hidden="true" />
+            )}
 
             {/* Settings link */}
-            <Link
-              href="/settings"
-              className={`rounded-full p-2 ${
-                pathname === '/settings'
-                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
-              }`}
-              aria-label="Settings"
-            >
-              <FiSettings size={20} />
-            </Link>
+            {mounted ? (
+              <Link
+                href="/settings"
+                className={`rounded-full p-2 ${
+                  pathname === '/settings'
+                    ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                }`}
+                aria-label="Settings"
+              >
+                <FiSettings size={20} />
+              </Link>
+            ) : (
+              <div className="h-10 w-10 rounded-full p-2" aria-hidden="true" />
+            )}
           </div>
         </div>
       </div>
