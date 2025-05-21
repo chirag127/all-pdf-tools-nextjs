@@ -114,11 +114,24 @@ export default function ChatWithPdfPage() {
         selectedModel
       );
 
+      // Validate response
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid response from server');
+      }
+
+      // Ensure answer is a string
+      const answer = response.answer || 'No answer provided';
+
+      // Ensure source_pages is an array or undefined
+      const sourcePages = Array.isArray(response.source_pages)
+        ? response.source_pages
+        : undefined;
+
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: response.answer,
-        sourcePages: response.source_pages,
+        content: answer,
+        sourcePages: sourcePages,
       };
 
       setMessages((prev) => [...prev, assistantMessage]);

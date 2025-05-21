@@ -124,7 +124,13 @@ async function handleResponse<T>(response: Response): Promise<T> {
         throw new ApiError(errorMessage, response.status);
     }
 
-    return response.json() as Promise<T>;
+    try {
+        const data = await response.json();
+        return data as T;
+    } catch (error) {
+        console.error("Error parsing response JSON:", error);
+        throw new ApiError("Failed to parse server response", response.status);
+    }
 }
 
 /**

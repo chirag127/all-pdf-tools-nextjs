@@ -112,7 +112,7 @@ async def chat_with_pdf(
         # Return response
         return ChatResponse(
             answer=answer,
-            source_pages=None  # We don't track source pages in this implementation
+            source_pages=[]  # Return empty array instead of None
         )
     except HTTPException:
         # Re-raise HTTP exceptions

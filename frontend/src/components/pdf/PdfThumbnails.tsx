@@ -12,6 +12,7 @@ interface PdfThumbnailsProps {
   className?: string;
   maxThumbnails?: number;
   onPasswordProtected?: (isPasswordProtected: boolean) => void;
+  password?: string;
 }
 
 type ErrorType = 'password' | 'corrupted' | 'generic' | null;
@@ -23,13 +24,14 @@ export default function PdfThumbnails({
   className = '',
   maxThumbnails = 20,
   onPasswordProtected,
+  password = '',
 }: PdfThumbnailsProps) {
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [numPages, setNumPages] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [errorType, setErrorType] = useState<ErrorType>(null);
-  const [password, setPassword] = useState<string>('');
+  const [internalPassword, setInternalPassword] = useState<string>(password);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [isPasswordAttempting, setIsPasswordAttempting] = useState<boolean>(false);
 
@@ -40,11 +42,11 @@ export default function PdfThumbnails({
 
   // Reset states when file changes
   useEffect(() => {
-    setPassword('');
+    setInternalPassword(password);
     setPasswordError(null);
     setErrorType(null);
     setError(null);
-  }, [file]);
+  }, [file, password]);
 
   // Generate thumbnails
   useEffect(() => {
@@ -79,7 +81,7 @@ export default function PdfThumbnails({
           data: data instanceof SharedArrayBuffer
             ? new Uint8Array(data) // Convert SharedArrayBuffer to Uint8Array
             : data, // Keep ArrayBuffer as is
-          password: password || undefined,
+          password: internalPassword || undefined,
         };
 
         // Load the PDF document
@@ -111,12 +113,12 @@ export default function PdfThumbnails({
           setNumPages(pdf.numPages);
 
           // If we got here with a password, clear any password errors
-          if (password) {
+          if (internalPassword) {
             setPasswordError(null);
           }
 
           // Notify parent component that password protection is resolved (if it was protected)
-          if (password && onPasswordProtected) {
+          if (internalPassword && onPasswordProtected) {
             onPasswordProtected(false);
           }
         }
@@ -243,17 +245,17 @@ export default function PdfThumbnails({
     return () => {
       isMounted = false;
     };
-  }, [file, maxThumbnails, password, onPasswordProtected]);
+  }, [file, maxThumbnails, internalPassword, onPasswordProtected]);
 
   // Handle password submission
   const handlePasswordSubmit = (submittedPassword: string) => {
     setIsPasswordAttempting(true);
-    setPassword(submittedPassword);
+    setInternalPassword(submittedPassword);
     setIsLoading(true);
 
     // The effect will re-run with the new password
     setTimeout(() => {
-      if (password === submittedPassword) {
+      if (internalPassword === submittedPassword) {
         setIsPasswordAttempting(false);
       }
     }, 500);
