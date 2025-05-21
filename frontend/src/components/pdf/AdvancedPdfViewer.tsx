@@ -15,6 +15,7 @@ interface AdvancedPdfViewerProps {
   className?: string;
   initialViewMode?: ViewMode;
   showThumbnails?: boolean;
+  initialPassword?: string;
 }
 
 export default function AdvancedPdfViewer({
@@ -22,11 +23,14 @@ export default function AdvancedPdfViewer({
   className = '',
   initialViewMode = 'pdf',
   showThumbnails = true,
+  initialPassword = '',
 }: AdvancedPdfViewerProps) {
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [numPages, setNumPages] = useState<number>(0);
   const [extractedText, setExtractedText] = useState<string>('');
+  const [password, setPassword] = useState<string>(initialPassword);
+  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
 
   // Initialize PDF.js worker
   useEffect(() => {
@@ -54,6 +58,16 @@ export default function AdvancedPdfViewer({
     if (viewMode === 'text') {
       setViewMode('pdf');
     }
+  };
+
+  // Handle password protected status
+  const handlePasswordProtected = (isProtected: boolean) => {
+    setIsPasswordProtected(isProtected);
+  };
+
+  // Handle password change from child components
+  const handlePasswordChange = (newPassword: string) => {
+    setPassword(newPassword);
   };
 
   return (
@@ -101,6 +115,8 @@ export default function AdvancedPdfViewer({
               currentPage={currentPage}
               onThumbnailClick={handleThumbnailClick}
               className="sticky top-4"
+              onPasswordProtected={handlePasswordProtected}
+              password={password}
             />
           </div>
         )}
@@ -113,6 +129,7 @@ export default function AdvancedPdfViewer({
               initialPage={currentPage}
               onPageChange={handlePageChange}
               onDocumentLoaded={handleDocumentLoaded}
+              password={password}
             />
           )}
 
@@ -120,6 +137,7 @@ export default function AdvancedPdfViewer({
             <PdfTextExtractor
               file={file}
               onTextExtracted={handleTextExtracted}
+              password={password}
             />
           )}
 
@@ -130,11 +148,13 @@ export default function AdvancedPdfViewer({
                 initialPage={currentPage}
                 onPageChange={handlePageChange}
                 onDocumentLoaded={handleDocumentLoaded}
+                password={password}
               />
               <PdfTextExtractor
                 file={file}
                 onTextExtracted={handleTextExtracted}
                 showControls={false}
+                password={password}
               />
             </div>
           )}

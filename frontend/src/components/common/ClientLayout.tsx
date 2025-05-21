@@ -15,7 +15,16 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     setMounted(true);
 
     // Initialize PDF.js worker
-    setupPdfWorker();
+    const initializePdfWorker = async () => {
+      try {
+        await setupPdfWorker();
+        console.log('PDF.js worker initialized successfully');
+      } catch (error) {
+        console.error('Error initializing PDF.js worker:', error);
+      }
+    };
+
+    initializePdfWorker();
   }, []);
 
   // Apply dark mode class to html element

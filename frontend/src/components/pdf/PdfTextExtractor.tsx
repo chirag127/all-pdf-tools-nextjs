@@ -1,39 +1,59 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiSearch, FiDownload, FiCopy } from 'react-icons/fi';
+import { FiSearch, FiDownload, FiCopy, FiAlertTriangle } from 'react-icons/fi';
 import { Button } from '@/components/common/Button';
 import setupPdfWorker from '@/lib/pdfWorker';
+import PdfPasswordInput from './PdfPasswordInput';
 
 interface PdfTextExtractorProps {
   file: File | Blob | ArrayBuffer | Uint8Array;
   onTextExtracted?: (text: string) => void;
   className?: string;
   showControls?: boolean;
+  password?: string;
 }
+
+type ErrorType = 'password' | 'corrupted' | 'generic' | null;
 
 export default function PdfTextExtractor({
   file,
   onTextExtracted,
   className = '',
   showControls = true,
+  password: initialPassword,
 }: PdfTextExtractorProps) {
   const [extractedText, setExtractedText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<ErrorType>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [highlightedText, setHighlightedText] = useState<string>('');
+  const [password, setPassword] = useState<string>(initialPassword || '');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isPasswordAttempting, setIsPasswordAttempting] = useState<boolean>(false);
 
   // Initialize PDF.js worker
   useEffect(() => {
     setupPdfWorker();
   }, []);
 
+  // Reset states when file changes
+  useEffect(() => {
+    if (!initialPassword) {
+      setPassword('');
+    }
+    setPasswordError(null);
+    setErrorType(null);
+    setError(null);
+  }, [file, initialPassword]);
+
   // Extract text from PDF
   useEffect(() => {
     let isMounted = true;
     setIsLoading(true);
     setError(null);
+    setErrorType(null);
     setExtractedText('');
 
     const extractText = async () => {
@@ -51,8 +71,36 @@ export default function PdfTextExtractor({
           data = file as ArrayBuffer;
         }
 
+        // Create options object with password if provided
+        const options: {
+          data: ArrayBuffer | ArrayBufferLike;
+          password?: string;
+        } = {
+          data,
+        };
+
+        if (password) {
+          options.password = password;
+        }
+
         // Load the PDF document
-        const loadingTask = pdfjsLib.getDocument({ data });
+        const loadingTask = pdfjsLib.getDocument(options);
+
+        // Add an onPassword callback to detect password-protected PDFs
+        loadingTask.onPassword = (updatePassword: (password: string) => void, reason: number) => {
+          // reason=1 means wrong password, reason=2 means first request for password
+          if (isMounted) {
+            setIsLoading(false);
+            setErrorType('password');
+
+            if (reason === 1) {
+              setPasswordError('Incorrect password. Please try again.');
+            } else {
+              setPasswordError(null);
+            }
+          }
+        };
+
         const pdf = await loadingTask.promise;
 
         let fullText = '';
@@ -72,6 +120,11 @@ export default function PdfTextExtractor({
           setExtractedText(fullText);
           setIsLoading(false);
 
+          // If we got here with a password, clear any password errors
+          if (password) {
+            setPasswordError(null);
+          }
+
           if (onTextExtracted) {
             onTextExtracted(fullText);
           }
@@ -79,10 +132,26 @@ export default function PdfTextExtractor({
 
         // Clean up
         pdf.destroy();
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error extracting text from PDF:', err);
         if (isMounted) {
-          setError('Failed to extract text from PDF. The file might be corrupted or password-protected.');
+          // Check if this is a password error
+          if (err.name === 'PasswordException' ||
+              (err.message && err.message.includes('password'))) {
+            setErrorType('password');
+            setError('This PDF is password protected. Please enter the password to extract text.');
+          }
+          // Check if this is a corrupted file error
+          else if (err.name === 'InvalidPDFException' ||
+                  (err.message && err.message.includes('corrupt'))) {
+            setErrorType('corrupted');
+            setError('This PDF file appears to be corrupted and cannot be processed.');
+          }
+          // Generic error
+          else {
+            setErrorType('generic');
+            setError('Failed to extract text from PDF. Please try again or use a different PDF file.');
+          }
           setIsLoading(false);
         }
       }
@@ -93,7 +162,7 @@ export default function PdfTextExtractor({
     return () => {
       isMounted = false;
     };
-  }, [file, onTextExtracted]);
+  }, [file, onTextExtracted, password]);
 
   // Handle search
   useEffect(() => {
@@ -138,6 +207,20 @@ export default function PdfTextExtractor({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  // Handle password submission
+  const handlePasswordSubmit = (submittedPassword: string) => {
+    setIsPasswordAttempting(true);
+    setPassword(submittedPassword);
+    setIsLoading(true);
+
+    // The effect will re-run with the new password
+    setTimeout(() => {
+      if (password === submittedPassword) {
+        setIsPasswordAttempting(false);
+      }
+    }, 500);
   };
 
   return (
@@ -185,11 +268,32 @@ export default function PdfTextExtractor({
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
             <span className="ml-2 text-gray-600 dark:text-gray-300">Extracting text...</span>
           </div>
+        ) : errorType === 'password' ? (
+          <div className="w-full max-w-md p-4">
+            <PdfPasswordInput
+              onSubmit={handlePasswordSubmit}
+              isLoading={isPasswordAttempting}
+              error={passwordError}
+            />
+          </div>
         ) : error ? (
           <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
-            <div className="flex">
-              <div className="text-sm text-red-700 dark:text-red-400">
-                {error}
+            <div className="flex items-start">
+              {errorType === 'corrupted' ? (
+                <FiAlertTriangle className="mr-2 h-5 w-5 text-red-600 dark:text-red-400" />
+              ) : null}
+              <div>
+                <div className="text-sm font-medium text-red-800 dark:text-red-300">
+                  {errorType === 'corrupted' ? 'Corrupted PDF File' : 'Error Extracting Text'}
+                </div>
+                <div className="mt-1 text-sm text-red-700 dark:text-red-400">
+                  {error}
+                  {errorType === 'corrupted' && (
+                    <div className="mt-2 text-xs">
+                      Try opening this file with a different PDF viewer to verify if it's corrupted.
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

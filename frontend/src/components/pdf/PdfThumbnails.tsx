@@ -242,7 +242,21 @@ export default function PdfThumbnails({
     return () => {
       isMounted = false;
     };
-  }, [file, maxThumbnails]);
+  }, [file, maxThumbnails, password, onPasswordProtected]);
+
+  // Handle password submission
+  const handlePasswordSubmit = (submittedPassword: string) => {
+    setIsPasswordAttempting(true);
+    setPassword(submittedPassword);
+    setIsLoading(true);
+
+    // The effect will re-run with the new password
+    setTimeout(() => {
+      if (password === submittedPassword) {
+        setIsPasswordAttempting(false);
+      }
+    }, 500);
+  };
 
   // Handle thumbnail click
   const handleThumbnailClick = (pageNumber: number) => {
@@ -258,10 +272,29 @@ export default function PdfThumbnails({
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600"></div>
           <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">Loading thumbnails...</span>
         </div>
+      ) : errorType === 'password' ? (
+        <PdfPasswordInput
+          onSubmit={handlePasswordSubmit}
+          isLoading={isPasswordAttempting}
+          error={passwordError}
+          className="mb-4"
+        />
       ) : error ? (
-        <div className="rounded-md bg-red-50 p-2 text-xs dark:bg-red-900/20">
-          <div className="text-red-700 dark:text-red-400">
-            {error}
+        <div className="rounded-md bg-red-50 p-3 text-xs dark:bg-red-900/20">
+          <div className="flex items-start">
+            {errorType === 'corrupted' ? (
+              <FiAlertTriangle className="mr-2 h-4 w-4 text-red-600 dark:text-red-400" />
+            ) : (
+              <FiFileText className="mr-2 h-4 w-4 text-red-600 dark:text-red-400" />
+            )}
+            <div className="text-red-700 dark:text-red-400">
+              {error}
+              {errorType === 'corrupted' && (
+                <div className="mt-2 text-xs">
+                  Try opening this file with a different PDF viewer to verify if it's corrupted.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       ) : (

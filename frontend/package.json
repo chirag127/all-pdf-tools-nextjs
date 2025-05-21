@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "dev:turbo": "next dev --turbopack",
-    "build": "next build --no-lint",
+    "copy-pdf-worker": "node scripts/copy-pdf-worker.js",
+    "dev": "npm run copy-pdf-worker && next dev",
+    "dev:turbo": "npm run copy-pdf-worker && next dev --turbopack",
+    "build": "npm run copy-pdf-worker && next build --no-lint",
     "start": "next start",
     "lint": "next lint",
-    "export": "next build --no-lint",
+    "export": "npm run copy-pdf-worker && next build --no-lint",
     "deploy": "npm run export && touch out/.nojekyll && gh-pages -d out -t true"
   },
   "dependencies": {

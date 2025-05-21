@@ -8,11 +8,23 @@ interface CardProps {
   children: React.ReactNode;
   className?: string;
   footer?: React.ReactNode;
+  onClick?: () => void;
 }
 
-export function Card({ title, description, children, className = '', footer }: CardProps) {
+export function Card({ title, description, children, className = '', footer, onClick }: CardProps) {
+  // Create a click handler that will be triggered when the card is clicked
+  const handleClick = (e: React.MouseEvent) => {
+    // If onClick is provided, call it
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
-    <div className={`rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 ${className}`}>
+    <div
+      className={`rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950 ${className}`}
+      onClick={handleClick}
+    >
       {(title || description) && (
         <div className="p-6 pb-0">
           {title && <h3 className="text-lg font-medium">{title}</h3>}
