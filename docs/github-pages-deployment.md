@@ -22,23 +22,24 @@ We've already configured Next.js for static export in `frontend/next.config.ts`:
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export',
-  basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-  images: {
-    unoptimized: true,
-  },
-  // Disable server-side features since we're exporting to static HTML
-  trailingSlash: true,
+    output: "export",
+    basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
+    images: {
+        unoptimized: true,
+    },
+    // Disable server-side features since we're exporting to static HTML
+    trailingSlash: true,
 };
 
 export default nextConfig;
 ```
 
 This configuration:
-- Sets `output: 'export'` to generate static HTML files
-- Uses `basePath` to handle GitHub Pages subdirectory paths
-- Disables image optimization (not available in static exports)
-- Adds trailing slashes for better compatibility
+
+-   Sets `output: 'export'` to generate static HTML files
+-   Uses `basePath` to handle GitHub Pages subdirectory paths
+-   Disables image optimization (not available in static exports)
+-   Adds trailing slashes for better compatibility
 
 ### 2. Environment Variables
 
@@ -50,8 +51,9 @@ NEXT_PUBLIC_BASE_PATH=/your-repo-name
 ```
 
 Replace:
-- `your-backend-url.onrender.com` with your actual backend URL
-- `your-repo-name` with your GitHub repository name
+
+-   `your-backend-url.onrender.com` with your actual backend URL
+-   `your-repo-name` with your GitHub repository name
 
 ### 3. GitHub Actions Workflow
 
@@ -92,51 +94,57 @@ For the workflow to access your backend URL, add it as a secret:
 If you prefer to deploy manually:
 
 1. Install the `gh-pages` package:
-   ```bash
-   cd frontend
-   npm install --save-dev gh-pages
-   ```
+
+    ```bash
+    cd frontend
+    npm install --save-dev gh-pages
+    ```
 
 2. Add deployment scripts to `package.json`:
-   ```json
-   "scripts": {
-     "export": "next build",
-     "deploy": "npm run export && touch out/.nojekyll && gh-pages -d out -t true"
-   }
-   ```
+
+    ```json
+    "scripts": {
+      "export": "next build",
+      "deploy": "npm run export && touch out/.nojekyll && gh-pages -d out -t true"
+    }
+    ```
 
 3. Run the deploy script:
-   ```bash
-   npm run deploy
-   ```
+    ```bash
+    npm run deploy
+    ```
 
 ## Troubleshooting
 
 ### 404 Errors on Page Refresh
 
 If you encounter 404 errors when refreshing pages, make sure:
-- `trailingSlash: true` is set in `next.config.ts`
-- You're using `Link` components from Next.js for internal navigation
+
+-   `trailingSlash: true` is set in `next.config.ts`
+-   You're using `Link` components from Next.js for internal navigation
 
 ### Assets Not Loading
 
 If assets (CSS, JS, images) aren't loading:
-- Check that `basePath` is correctly set in `next.config.ts`
-- Verify that all asset URLs in your code use relative paths
+
+-   Check that `basePath` is correctly set in `next.config.ts`
+-   Verify that all asset URLs in your code use relative paths
 
 ### API Connection Issues
 
 If the frontend can't connect to the backend:
-- Ensure CORS is properly configured on your backend
-- Verify the `NEXT_PUBLIC_BACKEND_API_URL` is correct
-- Check browser console for any network errors
+
+-   Ensure CORS is properly configured on your backend
+-   Verify the `NEXT_PUBLIC_BACKEND_API_URL` is correct
+-   Check browser console for any network errors
 
 ## Limitations
 
 When hosting on GitHub Pages:
-- No server-side rendering (SSR) or API routes
-- All pages must be statically generated at build time
-- Backend must be hosted separately
+
+-   No server-side rendering (SSR) or API routes
+-   All pages must be statically generated at build time
+-   Backend must be hosted separately
 
 ## Conclusion
 
