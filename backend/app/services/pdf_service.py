@@ -672,6 +672,143 @@ def repair_pdf(file_path: str, output_path: str) -> str:
         logger.error(f"Error repairing PDF: {e}")
         raise
 
+def convert_from_pdf(file_path: str, output_path: str, format: str) -> str:
+    """Convert a PDF to another format.
+
+    Args:
+        file_path: Path to the PDF file
+        output_path: Path to save the output file
+        format: Target format (e.g., 'docx', 'txt', 'jpg', etc.)
+
+    Returns:
+        Path to the converted file
+    """
+    try:
+        # Get the output directory and base filename without extension
+        output_dir = os.path.dirname(output_path)
+        base_name = os.path.splitext(os.path.basename(output_path))[0]
+
+        # Create the output file path with the correct extension
+        final_output_path = os.path.join(output_dir, f"{base_name}.{format}")
+
+        # Handle different target formats
+        format = format.lower()
+
+        if format == 'txt':
+            # Extract text from PDF
+            text = extract_text_from_pdf(file_path)
+
+            # Write text to output file
+            with open(final_output_path, 'w', encoding='utf-8') as f:
+                f.write(text)
+
+            return final_output_path
+
+        elif format in ['jpg', 'jpeg', 'png']:
+            # Use pdf2image if available
+            try:
+                # Try to import pdf2image
+                from pdf2image import convert_from_path
+
+                # Convert PDF to images
+                images = convert_from_path(file_path, dpi=300)
+
+                # If there's only one page, save it directly
+                if len(images) == 1:
+                    images[0].save(final_output_path, format.upper())
+                    return final_output_path
+
+                # If there are multiple pages, create a directory and save each page
+                multi_page_dir = os.path.join(output_dir, f"{base_name}_images")
+                os.makedirs(multi_page_dir, exist_ok=True)
+
+                # Save each page as a separate image
+                output_paths = []
+                for i, image in enumerate(images):
+                    page_path = os.path.join(multi_page_dir, f"page_{i+1}.{format}")
+                    image.save(page_path, format.upper())
+                    output_paths.append(page_path)
+
+                # Create a zip file containing all images
+                import zipfile
+                zip_path = os.path.join(output_dir, f"{base_name}.zip")
+
+                with zipfile.ZipFile(zip_path, 'w') as zipf:
+                    for path in output_paths:
+                        zipf.write(path, os.path.basename(path))
+
+                return zip_path
+
+            except ImportError:
+                # If pdf2image is not available, use a fallback approach with reportlab
+                logger.warning("pdf2image not available, using fallback method for image conversion")
+                raise ValueError("PDF to image conversion requires pdf2image library. Please install it with 'pip install pdf2image'")
+
+        elif format in ['docx', 'doc']:
+            # Try to use a library like python-docx if available
+            try:
+                import docx
+                from docx.shared import Inches
+
+                # Extract text from PDF
+                text = extract_text_from_pdf(file_path)
+
+                # Create a new Word document
+                doc = docx.Document()
+
+                # Add the text to the document
+                for paragraph in text.split('\n\n'):
+                    if paragraph.strip():
+                        doc.add_paragraph(paragraph)
+
+                # Save the document
+                doc.save(final_output_path)
+
+                return final_output_path
+
+            except ImportError:
+                logger.warning("python-docx not available for DOCX conversion")
+                raise ValueError("PDF to DOCX conversion requires python-docx library. Please install it with 'pip install python-docx'")
+
+        else:
+            # For unsupported formats, try to use LibreOffice if available
+            try:
+                # Check if LibreOffice is installed
+                subprocess.run(['libreoffice', '--version'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              check=True)
+
+                # Use LibreOffice to convert
+                subprocess.run([
+                    'libreoffice',
+                    '--headless',
+                    '--convert-to', format,
+                    '--outdir', output_dir,
+                    file_path
+                ], check=True)
+
+                # LibreOffice creates the file with the same name but different extension
+                converted_file = os.path.join(
+                    output_dir,
+                    os.path.basename(file_path).rsplit('.', 1)[0] + f".{format}"
+                )
+
+                if os.path.exists(converted_file):
+                    if converted_file != final_output_path:
+                        os.rename(converted_file, final_output_path)
+                    return final_output_path
+
+                raise ValueError(f"LibreOffice conversion to {format} failed")
+
+            except (subprocess.SubprocessError, FileNotFoundError):
+                logger.warning(f"LibreOffice conversion to {format} failed or LibreOffice not available")
+                raise ValueError(f"Conversion to {format} format is not supported without LibreOffice. Please install LibreOffice for full conversion support.")
+
+    except Exception as e:
+        logger.error(f"Error converting PDF to {format}: {e}")
+        raise
+
 def convert_to_pdf(file_path: str, output_path: str) -> str:
     """Convert various file types to PDF.
 

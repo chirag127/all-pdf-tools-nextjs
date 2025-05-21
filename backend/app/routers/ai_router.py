@@ -67,8 +67,10 @@ async def get_models(x_gemini_api_key: str = Header(...)):
 @router.post("/chat", response_model=ChatResponse)
 async def chat_with_pdf(
     background_tasks: BackgroundTasks,
-    request: ChatRequest,
     file: Optional[UploadFile] = File(None),
+    request: Optional[str] = Form(None),
+    question: Optional[str] = Form(None),
+    pdf_id: Optional[str] = Form(None),
     x_gemini_api_key: str = Header(...),
     model_name: str = Query("models/gemini-1.5-pro"),
 ):
@@ -76,9 +78,29 @@ async def chat_with_pdf(
     temp_files = []
 
     try:
+        # Parse the request JSON if provided
+        chat_request = None
+        if request:
+            try:
+                import json
+                chat_request = ChatRequest.parse_obj(json.loads(request))
+            except Exception as e:
+                logger.error(f"Error parsing request JSON: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+        else:
+            # Create request from form parameters
+            chat_request = ChatRequest(
+                question=question or "",
+                pdf_id=pdf_id
+            )
+
         # Validate that either file or pdf_id is provided
-        if file is None and request.pdf_id is None:
+        if file is None and (chat_request is None or chat_request.pdf_id is None):
             raise HTTPException(status_code=400, detail="Either file or pdf_id must be provided")
+
+        # Validate that question is provided
+        if chat_request is None or not chat_request.question:
+            raise HTTPException(status_code=400, detail="Question is required")
 
         # Process file if provided
         if file:
@@ -94,7 +116,7 @@ async def chat_with_pdf(
             pdf_text = pdf_service.extract_text_from_pdf(temp_file_path)
         else:
             # Use pdf_id to get the file
-            pdf_path = os.path.join(settings.TEMP_FILE_DIR, f"{request.pdf_id}.pdf")
+            pdf_path = os.path.join(settings.TEMP_FILE_DIR, f"{chat_request.pdf_id}.pdf")
             if not os.path.exists(pdf_path):
                 raise HTTPException(status_code=404, detail="PDF file not found")
 
@@ -102,7 +124,7 @@ async def chat_with_pdf(
             pdf_text = pdf_service.extract_text_from_pdf(pdf_path)
 
         # Chat with PDF using Gemini API
-        answer = gemini_service.chat_with_pdf(x_gemini_api_key, model_name, pdf_text, request.question)
+        answer = gemini_service.chat_with_pdf(x_gemini_api_key, model_name, pdf_text, chat_request.question)
         if answer is None:
             raise HTTPException(status_code=500, detail="Failed to generate response from Gemini API")
 
@@ -127,8 +149,9 @@ async def chat_with_pdf(
 @router.post("/summarize", response_model=SummarizeResponse)
 async def summarize_pdf(
     background_tasks: BackgroundTasks,
-    request: SummarizeRequest = None,
     file: Optional[UploadFile] = File(None),
+    request: Optional[str] = Form(None),
+    pdf_id: Optional[str] = Form(None),
     length: str = Form("medium"),
     x_gemini_api_key: str = Header(...),
     model_name: str = Query("models/gemini-1.5-pro"),
@@ -137,8 +160,24 @@ async def summarize_pdf(
     temp_files = []
 
     try:
+        # Parse the request JSON if provided
+        summarize_request = None
+        if request:
+            try:
+                import json
+                summarize_request = SummarizeRequest.parse_obj(json.loads(request))
+            except Exception as e:
+                logger.error(f"Error parsing request JSON: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+        else:
+            # Create request from form parameters
+            summarize_request = SummarizeRequest(
+                pdf_id=pdf_id,
+                length=length
+            )
+
         # Validate that either file or pdf_id is provided
-        if file is None and (request is None or request.pdf_id is None):
+        if file is None and (summarize_request is None or summarize_request.pdf_id is None):
             raise HTTPException(status_code=400, detail="Either file or pdf_id must be provided")
 
         # Process file if provided
@@ -155,7 +194,7 @@ async def summarize_pdf(
             pdf_text = pdf_service.extract_text_from_pdf(temp_file_path)
         else:
             # Use pdf_id to get the file
-            pdf_id = request.pdf_id
+            pdf_id = summarize_request.pdf_id
             pdf_path = os.path.join(settings.TEMP_FILE_DIR, f"{pdf_id}.pdf")
             if not os.path.exists(pdf_path):
                 raise HTTPException(status_code=404, detail="PDF file not found")
@@ -163,8 +202,8 @@ async def summarize_pdf(
             # Extract text from PDF
             pdf_text = pdf_service.extract_text_from_pdf(pdf_path)
 
-        # Use length from request if provided, otherwise use the form value
-        summary_length = request.length if request and request.length else length
+        # Use length from request
+        summary_length = summarize_request.length
 
         # Summarize PDF using Gemini API
         summary = gemini_service.summarize_pdf(x_gemini_api_key, model_name, pdf_text, summary_length)
@@ -189,8 +228,9 @@ async def summarize_pdf(
 @router.post("/translate", response_model=TranslateResponse)
 async def translate_pdf(
     background_tasks: BackgroundTasks,
-    request: TranslateRequest = None,
     file: Optional[UploadFile] = File(None),
+    request: Optional[str] = Form(None),
+    pdf_id: Optional[str] = Form(None),
     target_language: str = Form(...),
     x_gemini_api_key: str = Header(...),
     model_name: str = Query("models/gemini-1.5-pro"),
@@ -199,8 +239,24 @@ async def translate_pdf(
     temp_files = []
 
     try:
+        # Parse the request JSON if provided
+        translate_request = None
+        if request:
+            try:
+                import json
+                translate_request = TranslateRequest.parse_obj(json.loads(request))
+            except Exception as e:
+                logger.error(f"Error parsing request JSON: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+        else:
+            # Create request from form parameters
+            translate_request = TranslateRequest(
+                pdf_id=pdf_id,
+                target_language=target_language
+            )
+
         # Validate that either file or pdf_id is provided
-        if file is None and (request is None or request.pdf_id is None):
+        if file is None and (translate_request is None or translate_request.pdf_id is None):
             raise HTTPException(status_code=400, detail="Either file or pdf_id must be provided")
 
         # Process file if provided
@@ -217,7 +273,7 @@ async def translate_pdf(
             pdf_text = pdf_service.extract_text_from_pdf(temp_file_path)
         else:
             # Use pdf_id to get the file
-            pdf_id = request.pdf_id
+            pdf_id = translate_request.pdf_id
             pdf_path = os.path.join(settings.TEMP_FILE_DIR, f"{pdf_id}.pdf")
             if not os.path.exists(pdf_path):
                 raise HTTPException(status_code=404, detail="PDF file not found")
@@ -225,8 +281,8 @@ async def translate_pdf(
             # Extract text from PDF
             pdf_text = pdf_service.extract_text_from_pdf(pdf_path)
 
-        # Use target_language from request if provided, otherwise use the form value
-        target_lang = request.target_language if request and request.target_language else target_language
+        # Use target_language from request
+        target_lang = translate_request.target_language
 
         # Translate PDF using Gemini API
         translated_text = gemini_service.translate_pdf(x_gemini_api_key, model_name, pdf_text, target_lang)
@@ -254,8 +310,9 @@ async def translate_pdf(
 @router.post("/generate-questions", response_model=GenerateQuestionsResponse)
 async def generate_questions(
     background_tasks: BackgroundTasks,
-    request: GenerateQuestionsRequest = None,
     file: Optional[UploadFile] = File(None),
+    request: Optional[str] = Form(None),
+    pdf_id: Optional[str] = Form(None),
     count: int = Form(5),
     x_gemini_api_key: str = Header(...),
     model_name: str = Query("models/gemini-1.5-pro"),
@@ -264,8 +321,24 @@ async def generate_questions(
     temp_files = []
 
     try:
+        # Parse the request JSON if provided
+        questions_request = None
+        if request:
+            try:
+                import json
+                questions_request = GenerateQuestionsRequest.parse_obj(json.loads(request))
+            except Exception as e:
+                logger.error(f"Error parsing request JSON: {e}")
+                raise HTTPException(status_code=400, detail=f"Invalid request format: {str(e)}")
+        else:
+            # Create request from form parameters
+            questions_request = GenerateQuestionsRequest(
+                pdf_id=pdf_id,
+                count=count
+            )
+
         # Validate that either file or pdf_id is provided
-        if file is None and (request is None or request.pdf_id is None):
+        if file is None and (questions_request is None or questions_request.pdf_id is None):
             raise HTTPException(status_code=400, detail="Either file or pdf_id must be provided")
 
         # Process file if provided
@@ -282,7 +355,7 @@ async def generate_questions(
             pdf_text = pdf_service.extract_text_from_pdf(temp_file_path)
         else:
             # Use pdf_id to get the file
-            pdf_id = request.pdf_id
+            pdf_id = questions_request.pdf_id
             pdf_path = os.path.join(settings.TEMP_FILE_DIR, f"{pdf_id}.pdf")
             if not os.path.exists(pdf_path):
                 raise HTTPException(status_code=404, detail="PDF file not found")
@@ -290,8 +363,8 @@ async def generate_questions(
             # Extract text from PDF
             pdf_text = pdf_service.extract_text_from_pdf(pdf_path)
 
-        # Use count from request if provided, otherwise use the form value
-        question_count = request.count if request and request.count else count
+        # Use count from request
+        question_count = questions_request.count
 
         # Generate questions using Gemini API
         questions = gemini_service.generate_questions(x_gemini_api_key, model_name, pdf_text, question_count)

@@ -682,6 +682,84 @@ async def download_zip(
         headers={"Content-Disposition": f"attachment; filename=pdf_files_{dir_id}.zip"}
     )
 
+@router.post("/convert-from-pdf", response_model=PDFResponse)
+async def convert_from_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    format: str = Form(...),  # Target format (e.g., 'docx', 'txt', 'jpg', etc.)
+):
+    """Convert a PDF to another format."""
+    temp_files = []
+
+    try:
+        # Validate file is a PDF
+        if not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="File must be a PDF")
+
+        # Validate format
+        supported_formats = ["txt", "jpg", "jpeg", "png", "docx", "doc", "html", "rtf", "odt", "xlsx", "csv"]
+        if format.lower() not in supported_formats:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported format: {format}. Supported formats: {', '.join(supported_formats)}"
+            )
+
+        # Save uploaded file
+        temp_file_path = await save_upload_file(file)
+        temp_files.append(temp_file_path)
+
+        # Create output file path (without extension, will be added by the service)
+        output_file_id = str(uuid.uuid4())
+        output_base_path = os.path.join(settings.TEMP_FILE_DIR, output_file_id)
+
+        # Convert PDF to the requested format
+        try:
+            output_path = pdf_service.convert_from_pdf(temp_file_path, output_base_path, format)
+        except ValueError as ve:
+            # Handle specific conversion errors
+            raise HTTPException(status_code=400, detail=str(ve))
+        except Exception as e:
+            # Handle general conversion errors
+            raise HTTPException(status_code=500, detail=f"Failed to convert PDF: {str(e)}")
+
+        # Schedule cleanup of temporary files (excluding the output file)
+        background_tasks.add_task(cleanup_temp_files, temp_files)
+
+        # Determine if the output is a zip file (for multi-page image conversions)
+        is_zip = output_path.endswith('.zip')
+
+        # Return response with appropriate download URL
+        if is_zip:
+            # Extract the directory ID from the path
+            dir_id = os.path.basename(output_path).replace('.zip', '')
+            return PDFResponse(
+                success=True,
+                message=f"PDF converted to {format} successfully (multiple files)",
+                file_path=output_path,
+                download_url=f"/api/v1/pdf/download/{dir_id}.zip"
+            )
+        else:
+            # Extract the file ID and extension
+            file_name = os.path.basename(output_path)
+            file_id, file_ext = os.path.splitext(file_name)
+
+            return PDFResponse(
+                success=True,
+                message=f"PDF converted to {format} successfully",
+                file_path=output_path,
+                download_url=f"/api/v1/pdf/download/{file_id}{file_ext}"
+            )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Clean up all temporary files in case of error
+        all_temp_files = temp_files + [os.path.join(settings.TEMP_FILE_DIR, f"{str(uuid.uuid4())}.{format}")]
+        background_tasks.add_task(cleanup_temp_files, all_temp_files)
+
+        logger.error(f"Error converting PDF to {format}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/convert-to-pdf", response_model=PDFResponse)
 async def convert_to_pdf(
     background_tasks: BackgroundTasks,
