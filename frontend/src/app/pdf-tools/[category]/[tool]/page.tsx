@@ -5,7 +5,7 @@ import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import { Button } from '@/components/common/Button';
 import ClientLayout from '@/components/common/ClientLayout';
 import { usePdfStore } from '@/lib/store';
-import { pdfTools } from '@/lib/pdf-tools-config';
+import { pdfTools, getAllTools } from '@/lib/pdf-tools-config';
 
 import { useParams, useRouter } from 'next/navigation';
 import MergePdfTool from '@/components/pdf/tools/MergePdfTool';
@@ -36,6 +36,8 @@ const PdfViewerDemo = dynamic(() => import('@/app/pdf-viewer-demo/page'), {
   ssr: false,
   loading: () => <div className="flex h-96 items-center justify-center">Loading PDF Viewer...</div>,
 });
+
+// Static params and metadata are defined in static-params.js
 
 export default function PdfToolPage() {
   const params = useParams();

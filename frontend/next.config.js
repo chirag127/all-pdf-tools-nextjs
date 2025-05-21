@@ -78,6 +78,11 @@ const nextConfig = {
     // This can help with navigation issues
     reactStrictMode: false,
 
+    // Configure images
+    images: {
+        domains: ["localhost"],
+    },
+
     // Skip prerendering for pages that use browser-specific APIs
     skipTrailingSlashRedirect: true,
     skipMiddlewareUrlNormalize: true,
@@ -102,24 +107,53 @@ const nextConfig = {
         // Add resolve aliases for PDF.js
         config.resolve.alias = {
             ...config.resolve.alias,
-            // Add aliases for different PDF.js builds if needed
+            // Add aliases for different PDF.js builds
             "pdfjs-dist/build/pdf.worker": path.resolve(
                 __dirname,
-                "node_modules/pdfjs-dist/build/pdf.worker.js"
+                "node_modules/pdfjs-dist/build/pdf.worker.mjs"
+            ),
+            "pdfjs-dist/build/pdf.worker.js": path.resolve(
+                __dirname,
+                "node_modules/pdfjs-dist/build/pdf.worker.mjs"
             ),
         };
 
         // Copy PDF.js worker file to public directory during build
         if (!isServer && dev) {
             const publicDir = path.join(__dirname, "public");
-            const workerSrc = path.join(
-                __dirname,
-                "node_modules/pdfjs-dist/build/pdf.worker.js"
-            );
-            const workerDest = path.join(publicDir, "pdf.worker.js");
 
-            // Check if worker file exists in node_modules
-            if (fs.existsSync(workerSrc)) {
+            // Check for different possible worker file paths (including .mjs)
+            const possibleWorkerPaths = [
+                path.join(
+                    __dirname,
+                    "node_modules/pdfjs-dist/build/pdf.worker.js"
+                ),
+                path.join(
+                    __dirname,
+                    "node_modules/pdfjs-dist/build/pdf.worker.min.js"
+                ),
+                path.join(
+                    __dirname,
+                    "node_modules/pdfjs-dist/build/pdf.worker.mjs"
+                ),
+                path.join(
+                    __dirname,
+                    "node_modules/pdfjs-dist/build/pdf.worker.min.mjs"
+                ),
+            ];
+
+            // Find the first available worker file
+            let workerSrc = null;
+            for (const filePath of possibleWorkerPaths) {
+                if (fs.existsSync(filePath)) {
+                    workerSrc = filePath;
+                    break;
+                }
+            }
+
+            if (workerSrc) {
+                const workerDest = path.join(publicDir, "pdf.worker.js");
+
                 // Create public directory if it doesn't exist
                 if (!fs.existsSync(publicDir)) {
                     fs.mkdirSync(publicDir, { recursive: true });
@@ -127,9 +161,23 @@ const nextConfig = {
 
                 // Copy worker file to public directory
                 fs.copyFileSync(workerSrc, workerDest);
-                console.log(`Copied PDF.js worker file to ${workerDest}`);
+                console.log(
+                    `Copied PDF.js worker file (${path.basename(
+                        workerSrc
+                    )}) to ${workerDest}`
+                );
+
+                // Copy map file if it exists
+                const mapSrc = `${workerSrc}.map`;
+                if (fs.existsSync(mapSrc)) {
+                    const mapDest = `${workerDest}.map`;
+                    fs.copyFileSync(mapSrc, mapDest);
+                    console.log(`Copied map file to ${mapDest}`);
+                }
             } else {
-                console.warn("PDF.js worker file not found in node_modules");
+                console.warn(
+                    "PDF.js worker file not found in node_modules - using copy-pdf-worker.js script instead"
+                );
             }
         }
 

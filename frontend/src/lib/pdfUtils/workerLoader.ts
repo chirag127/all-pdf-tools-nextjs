@@ -80,15 +80,34 @@ async function tryLoadWorker(pdfjsLib: any) {
 
     // Approach 3: Try to import the worker directly (for ESM builds)
     try {
-        // Import the worker directly - use any type to avoid TypeScript errors
-        await (import("pdfjs-dist/build/pdf.worker.mjs") as Promise<any>);
-        console.log("PDF.js worker loaded via direct ESM import");
-        return;
+        // Try multiple possible worker file paths
+        const workerPaths = [
+            "pdfjs-dist/build/pdf.worker.mjs",
+            "pdfjs-dist/build/pdf.worker.js",
+            "pdfjs-dist/legacy/build/pdf.worker.js",
+        ];
+
+        for (const workerPath of workerPaths) {
+            try {
+                // Import the worker directly - use any type to avoid TypeScript errors
+                await (import(workerPath) as Promise<any>);
+                console.log(
+                    `PDF.js worker loaded via direct import: ${workerPath}`
+                );
+                return;
+            } catch (importError) {
+                console.warn(
+                    `Failed to import worker from ${workerPath}:`,
+                    importError
+                );
+                // Continue to the next path
+            }
+        }
+
+        // If we get here, all import attempts failed
+        throw new Error("All direct worker imports failed");
     } catch (error) {
-        console.warn(
-            "Failed to load PDF.js worker via direct ESM import:",
-            error
-        );
+        console.warn("Failed to load PDF.js worker via direct imports:", error);
     }
 
     // Approach 4: Use a CDN version as a last resort
