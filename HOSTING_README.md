@@ -24,6 +24,10 @@ To deploy the application, you need to host both components, either on the same 
 
 We provide detailed guides for several hosting options:
 
+### [Hosting Summary](HOSTING_SUMMARY.md)
+
+A quick overview of all hosting options to help you make a decision at a glance.
+
 ### [General Hosting Guide](HOSTING_GUIDE.md)
 
 An overview of all hosting options with basic instructions for each.
@@ -48,6 +52,20 @@ Deploy both frontend and backend on a Virtual Private Server (VPS) like DigitalO
 
 **Pros**: Complete control, fixed monthly cost, no sleep time
 **Cons**: Requires server management knowledge, manual maintenance
+
+### [Docker Deployment](DOCKER_HOSTING_GUIDE.md)
+
+Deploy the application using Docker and Docker Compose, either on a VPS or a container orchestration platform.
+
+**Pros**: Consistent environments, easier deployment, better isolation
+**Cons**: Requires Docker knowledge, slightly higher resource overhead
+
+### [AWS Deployment](AWS_HOSTING_GUIDE.md)
+
+Deploy the application on Amazon Web Services using AWS Amplify, Lambda, and API Gateway.
+
+**Pros**: Highly scalable, pay-per-use pricing, managed services
+**Cons**: Potential for unexpected costs, vendor lock-in
 
 ### [Hosting Options Comparison](HOSTING_OPTIONS_COMPARISON.md)
 
@@ -178,3 +196,16 @@ Please ensure your contributions are clear, accurate, and follow the existing st
 ---
 
 These guides were last updated on May 20, 2025. The deployment instructions are compatible with All PDF Tools version 1.0.0 and later.
+
+## Available Guides
+
+For detailed setup instructions for each option, refer to the specific guides:
+
+-   [HOSTING_SUMMARY.md](HOSTING_SUMMARY.md) - Quick overview of all options
+-   [HOSTING_GUIDE.md](HOSTING_GUIDE.md) - General overview
+-   [GITHUB_PAGES_HOSTING.md](GITHUB_PAGES_HOSTING.md) - GitHub Pages + Render
+-   [VERCEL_RENDER_HOSTING.md](VERCEL_RENDER_HOSTING.md) - Vercel + Render
+-   [SELF_HOSTING_GUIDE.md](SELF_HOSTING_GUIDE.md) - Self-hosted VPS
+-   [DOCKER_HOSTING_GUIDE.md](DOCKER_HOSTING_GUIDE.md) - Docker Deployment
+-   [AWS_HOSTING_GUIDE.md](AWS_HOSTING_GUIDE.md) - AWS Deployment
+-   [HOSTING_OPTIONS_COMPARISON.md](HOSTING_OPTIONS_COMPARISON.md) - Detailed comparison
