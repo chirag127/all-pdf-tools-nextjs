@@ -131,16 +131,26 @@ export default function PdfToolsPage() {
               </div>
 
               <CardGrid columns={4}>
-                {category.tools.map((tool) => (
-                  <Link key={tool.id} href={`/pdf-tools/${category.id}/${tool.id}`}>
-                    <Card className="h-full cursor-pointer transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-800">
-                      <div className="flex flex-col items-center text-center">
-                        <h3 className="text-lg font-medium">{tool.name}</h3>
-                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{tool.description}</p>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+                {category.tools.map((tool) => {
+                  // Create a navigation function for this tool
+                  const navigateToTool = () => {
+                    window.location.href = `/pdf-tools/${category.id}/${tool.id}`;
+                  };
+
+                  return (
+                    <div key={tool.id}>
+                      <Card
+                        className="h-full cursor-pointer transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-800"
+                        onClick={navigateToTool}
+                      >
+                        <div className="flex flex-col items-center text-center">
+                          <h3 className="text-lg font-medium">{tool.name}</h3>
+                          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">{tool.description}</p>
+                        </div>
+                      </Card>
+                    </div>
+                  );
+                })}
               </CardGrid>
             </section>
           ))}

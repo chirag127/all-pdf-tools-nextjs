@@ -69,26 +69,27 @@ export default function PdfViewer({
         const pdfjsLib = await import('pdfjs-dist');
 
         // Convert file to ArrayBuffer if it's a File or Blob
-        let data: ArrayBuffer;
+        // Use a type that's compatible with PDF.js DocumentInitParameters
+        let data: ArrayBuffer | Uint8Array;
         if (file instanceof File || file instanceof Blob) {
           data = await file.arrayBuffer();
         } else if (file instanceof Uint8Array) {
-          data = file.buffer;
+          data = file; // Use the Uint8Array directly
         } else {
-          data = file as ArrayBuffer;
+          // Convert ArrayBufferLike to Uint8Array if needed
+          data = file instanceof SharedArrayBuffer
+            ? new Uint8Array(file)
+            : file as ArrayBuffer;
         }
 
         // Create options object with password if provided
-        const options: {
-          data: ArrayBuffer;
-          password?: string;
-        } = {
-          data,
+        // Use the correct type for DocumentInitParameters
+        const options = {
+          data: data instanceof SharedArrayBuffer
+            ? new Uint8Array(data) // Convert SharedArrayBuffer to Uint8Array
+            : data, // Keep ArrayBuffer as is
+          password: password || undefined,
         };
-
-        if (password) {
-          options.password = password;
-        }
 
         // Load the PDF document
         const loadingTask = pdfjsLib.getDocument(options);

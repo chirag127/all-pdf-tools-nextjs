@@ -681,3 +681,64 @@ async def download_zip(
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename=pdf_files_{dir_id}.zip"}
     )
+
+@router.post("/convert-to-pdf", response_model=PDFResponse)
+async def convert_to_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+):
+    """Convert various file types to PDF."""
+    temp_files = []
+
+    try:
+        # Get file extension (lowercase)
+        file_extension = os.path.splitext(file.filename)[1].lower()
+
+        # List of supported file extensions
+        supported_extensions = [
+            # Images
+            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif',
+            # Office documents
+            '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+            # Text files
+            '.txt', '.html', '.md', '.rtf'
+        ]
+
+        # Validate file extension
+        if file_extension not in supported_extensions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported file type: {file_extension}. Supported types: {', '.join(supported_extensions)}"
+            )
+
+        # Save uploaded file
+        temp_file_path = await save_upload_file(file)
+        temp_files.append(temp_file_path)
+
+        # Create output file path
+        output_file_id = str(uuid.uuid4())
+        output_path = os.path.join(settings.TEMP_FILE_DIR, f"{output_file_id}.pdf")
+
+        # Convert file to PDF
+        pdf_service.convert_to_pdf(temp_file_path, output_path)
+
+        # Schedule cleanup of temporary files (excluding the output file)
+        background_tasks.add_task(cleanup_temp_files, temp_files)
+
+        # Return response with download URL
+        return PDFResponse(
+            success=True,
+            message="File converted to PDF successfully",
+            file_path=output_path,
+            download_url=f"/api/v1/pdf/download/{output_file_id}.pdf"
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        # Clean up all temporary files in case of error
+        all_temp_files = temp_files + [os.path.join(settings.TEMP_FILE_DIR, f"{str(uuid.uuid4())}.pdf")]
+        background_tasks.add_task(cleanup_temp_files, all_temp_files)
+
+        logger.error(f"Error converting file to PDF: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

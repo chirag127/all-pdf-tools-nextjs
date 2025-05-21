@@ -37,16 +37,11 @@ export async function extractText(
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
-        const options: {
-            data: ArrayBuffer;
-            password?: string;
-        } = {
+        // Use the correct type for DocumentInitParameters
+        const options = {
             data: arrayBuffer,
+            password: password || undefined,
         };
-
-        if (password) {
-            options.password = password;
-        }
 
         const pdf = await pdfjs.getDocument(options).promise;
         let text = "";
@@ -84,16 +79,11 @@ export async function getPageCount(
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
-        const options: {
-            data: ArrayBuffer;
-            password?: string;
-        } = {
+        // Use the correct type for DocumentInitParameters
+        const options = {
             data: arrayBuffer,
+            password: password || undefined,
         };
-
-        if (password) {
-            options.password = password;
-        }
 
         const pdf = await pdfjs.getDocument(options).promise;
         const pageCount = pdf.numPages;
@@ -120,16 +110,11 @@ export async function getPagePreview(
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
-        const options: {
-            data: ArrayBuffer;
-            password?: string;
-        } = {
+        // Use the correct type for DocumentInitParameters
+        const options = {
             data: arrayBuffer,
+            password: password || undefined,
         };
-
-        if (password) {
-            options.password = password;
-        }
 
         const pdf = await pdfjs.getDocument(options).promise;
         const page = await pdf.getPage(pageNumber);

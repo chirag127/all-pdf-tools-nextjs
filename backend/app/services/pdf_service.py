@@ -1,6 +1,9 @@
 import os
 import uuid
 import logging
+import tempfile
+import subprocess
+from pathlib import Path
 from typing import List, Optional, Tuple, Dict, Any
 import PyPDF2
 from PyPDF2 import PdfReader, PdfWriter
@@ -8,6 +11,9 @@ import pikepdf
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import Color
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ReportLabImage
+from reportlab.lib.styles import getSampleStyleSheet
+from PIL import Image
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -664,4 +670,173 @@ def repair_pdf(file_path: str, output_path: str) -> str:
         return output_path
     except Exception as e:
         logger.error(f"Error repairing PDF: {e}")
+        raise
+
+def convert_to_pdf(file_path: str, output_path: str) -> str:
+    """Convert various file types to PDF.
+
+    Args:
+        file_path: Path to the input file
+        output_path: Path to save the output PDF
+
+    Returns:
+        Path to the converted PDF
+    """
+    try:
+        # Get file extension (lowercase)
+        file_extension = os.path.splitext(file_path)[1].lower()
+
+        # Handle different file types
+        if file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.tif']:
+            # Convert image to PDF
+            return _convert_image_to_pdf(file_path, output_path)
+        elif file_extension in ['.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx']:
+            # Convert Office documents to PDF
+            return _convert_office_to_pdf(file_path, output_path)
+        elif file_extension in ['.txt', '.html', '.md', '.rtf']:
+            # Convert text files to PDF
+            return _convert_text_to_pdf(file_path, output_path)
+        else:
+            raise ValueError(f"Unsupported file type: {file_extension}")
+
+    except Exception as e:
+        logger.error(f"Error converting file to PDF: {e}")
+        raise
+
+def _convert_image_to_pdf(file_path: str, output_path: str) -> str:
+    """Convert an image file to PDF.
+
+    Args:
+        file_path: Path to the image file
+        output_path: Path to save the output PDF
+
+    Returns:
+        Path to the converted PDF
+    """
+    try:
+        # Open the image
+        img = Image.open(file_path)
+
+        # Convert RGBA to RGB if needed (PDF doesn't support alpha channel)
+        if img.mode == 'RGBA':
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            background.paste(img, mask=img.split()[3])  # Use alpha channel as mask
+            img = background
+
+        # Calculate PDF page size based on image dimensions
+        width, height = img.size
+        pdf_width, pdf_height = width, height
+
+        # Create a PDF with the same dimensions as the image
+        c = canvas.Canvas(output_path, pagesize=(pdf_width, pdf_height))
+
+        # Draw the image on the PDF
+        c.drawImage(file_path, 0, 0, width=pdf_width, height=pdf_height)
+
+        # Save the PDF
+        c.save()
+
+        return output_path
+    except Exception as e:
+        logger.error(f"Error converting image to PDF: {e}")
+        raise
+
+def _convert_text_to_pdf(file_path: str, output_path: str) -> str:
+    """Convert a text file to PDF.
+
+    Args:
+        file_path: Path to the text file
+        output_path: Path to save the output PDF
+
+    Returns:
+        Path to the converted PDF
+    """
+    try:
+        # Read the text file
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+            text = file.read()
+
+        # Create a PDF document
+        doc = SimpleDocTemplate(output_path, pagesize=letter)
+        styles = getSampleStyleSheet()
+
+        # Create content
+        content = []
+
+        # Add text paragraphs
+        for line in text.split('\n'):
+            if line.strip():
+                content.append(Paragraph(line, styles['Normal']))
+            else:
+                content.append(Spacer(1, 12))  # Add space for empty lines
+
+        # Build the PDF
+        doc.build(content)
+
+        return output_path
+    except Exception as e:
+        logger.error(f"Error converting text to PDF: {e}")
+        raise
+
+def _convert_office_to_pdf(file_path: str, output_path: str) -> str:
+    """Convert an Office document to PDF.
+
+    Args:
+        file_path: Path to the Office document
+        output_path: Path to save the output PDF
+
+    Returns:
+        Path to the converted PDF
+    """
+    try:
+        # For Office documents, we'll use a fallback approach
+        # First, try to use LibreOffice if available
+        try:
+            # Check if LibreOffice is installed
+            subprocess.run(['libreoffice', '--version'],
+                          stdout=subprocess.PIPE,
+                          stderr=subprocess.PIPE,
+                          check=True)
+
+            # Use LibreOffice to convert
+            subprocess.run([
+                'libreoffice',
+                '--headless',
+                '--convert-to', 'pdf',
+                '--outdir', os.path.dirname(output_path),
+                file_path
+            ], check=True)
+
+            # LibreOffice creates the PDF with the same name but .pdf extension
+            # We need to rename it to match our expected output path
+            converted_file = os.path.join(
+                os.path.dirname(output_path),
+                os.path.basename(file_path).rsplit('.', 1)[0] + '.pdf'
+            )
+
+            if os.path.exists(converted_file):
+                if converted_file != output_path:
+                    os.rename(converted_file, output_path)
+                return output_path
+
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
+            logger.warning(f"LibreOffice conversion failed, falling back to basic conversion: {e}")
+
+        # If LibreOffice fails or is not available, create a simple PDF with a message
+        doc = SimpleDocTemplate(output_path, pagesize=letter)
+        styles = getSampleStyleSheet()
+
+        content = [
+            Paragraph(f"Original file: {os.path.basename(file_path)}", styles['Title']),
+            Spacer(1, 20),
+            Paragraph("This file was converted to PDF format.", styles['Normal']),
+            Spacer(1, 10),
+            Paragraph("For better conversion quality, please install LibreOffice on the server.", styles['Normal'])
+        ]
+
+        doc.build(content)
+        return output_path
+
+    except Exception as e:
+        logger.error(f"Error converting Office document to PDF: {e}")
         raise

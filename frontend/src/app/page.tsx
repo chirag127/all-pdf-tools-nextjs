@@ -69,14 +69,19 @@ export default function Home() {
                 A comprehensive toolkit for all your PDF needs. Merge, split, edit, secure, and analyze your PDF documents with ease.
               </p>
               <div className="mt-10 flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
-                <Link href="/pdf-tools">
-                  <Button size="lg">Get Started with PDF Tools</Button>
-                </Link>
-                <Link href="/ai-features">
-                  <Button variant="outline" size="lg">
-                    Explore AI Features
-                  </Button>
-                </Link>
+                <Button
+                  size="lg"
+                  onClick={() => window.location.href = "/pdf-tools"}
+                >
+                  Get Started with PDF Tools
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => window.location.href = "/ai-features"}
+                >
+                  Explore AI Features
+                </Button>
               </div>
             </div>
           </div>
@@ -96,21 +101,29 @@ export default function Home() {
 
             <div className="mt-12">
               <CardGrid columns={3}>
-                {featureCategories.map((category) => (
-                  <Link key={category.title} href={category.href}>
-                    <Card
-                      className="h-full cursor-pointer transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-800"
-                    >
-                      <div className="flex flex-col items-center text-center">
-                        <div className="mb-4 rounded-full bg-gray-100 p-3 dark:bg-gray-800">
-                          {category.icon}
+                {featureCategories.map((category) => {
+                  // Create a navigation function for this category
+                  const navigateToCategory = () => {
+                    window.location.href = category.href;
+                  };
+
+                  return (
+                    <div key={category.title}>
+                      <Card
+                        className="h-full cursor-pointer transition-all hover:border-blue-300 hover:shadow-md dark:hover:border-blue-800"
+                        onClick={navigateToCategory}
+                      >
+                        <div className="flex flex-col items-center text-center">
+                          <div className="mb-4 rounded-full bg-gray-100 p-3 dark:bg-gray-800">
+                            {category.icon}
+                          </div>
+                          <h3 className="text-xl font-medium">{category.title}</h3>
+                          <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
                         </div>
-                        <h3 className="text-xl font-medium">{category.title}</h3>
-                        <p className="mt-2 text-gray-600 dark:text-gray-400">{category.description}</p>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+                      </Card>
+                    </div>
+                  );
+                })}
               </CardGrid>
             </div>
           </div>
@@ -127,15 +140,14 @@ export default function Home() {
                 Get started with All PDF Tools today and experience the difference.
               </p>
               <div className="mt-8">
-                <Link href="/pdf-tools">
-                  <Button
-                    variant="secondary"
-                    size="lg"
-                    className="bg-white text-blue-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
-                  >
-                    Explore All Tools
-                  </Button>
-                </Link>
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-gray-100 dark:bg-gray-800 dark:text-blue-400 dark:hover:bg-gray-700"
+                  onClick={() => window.location.href = "/pdf-tools"}
+                >
+                  Explore All Tools
+                </Button>
               </div>
             </div>
           </div>

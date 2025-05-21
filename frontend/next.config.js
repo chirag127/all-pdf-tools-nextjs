@@ -74,7 +74,9 @@ const fs = require("fs");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    reactStrictMode: true,
+    // Disable strict mode to prevent double rendering in development
+    // This can help with navigation issues
+    reactStrictMode: false,
 
     // Skip prerendering for pages that use browser-specific APIs
     skipTrailingSlashRedirect: true,
