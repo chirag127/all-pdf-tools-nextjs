@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, use } from 'react';
 import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import { Button } from '@/components/common/Button';
 import ClientLayout from '@/components/common/ClientLayout';
@@ -39,10 +39,14 @@ const PdfViewerDemo = dynamic(() => import('@/app/pdf-viewer-demo/page'), {
 
 // Static params and metadata are defined in static-params.js
 
-export default function PdfToolPage() {
-  const params = useParams();
+export default function PdfToolPage(props: {
+  params: Promise<{ category: string; tool: string }>;
+}) {
+  // Use React.use to unwrap the Promise for params in client components
+  const resolvedParams = use(props.params);
+  const { category, tool } = resolvedParams;
+
   const router = useRouter();
-  const { category, tool } = params as { category: string; tool: string };
   const { isProcessing, resultUrl, resetState } = usePdfStore();
   const [toolInfo, setToolInfo] = useState<any>(null);
 

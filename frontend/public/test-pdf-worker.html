@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PDF.js Worker Test</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.2.133/pdf.min.js"></script>
+</head>
+<body>
+  <h1>PDF.js Worker Test</h1>
+  <div id="output"></div>
+
+  <script>
+    // Function to log messages to the page
+    function log(message) {
+      const output = document.getElementById('output');
+      const p = document.createElement('p');
+      p.textContent = message;
+      output.appendChild(p);
+      console.log(message);
+    }
+
+    // Test PDF.js worker loading
+    window.onload = function() {
+      try {
+        // Log the PDF.js version
+        log('PDF.js version: ' + pdfjsLib.version);
+
+        // Set the worker source to a CDN URL
+        const version = pdfjsLib.version || '5.2.133';
+        const cdnUrl = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.js`;
+        log('Setting worker source to: ' + cdnUrl);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = cdnUrl;
+
+        // Verify the worker source is set correctly
+        log('Worker source is now: ' + pdfjsLib.GlobalWorkerOptions.workerSrc);
+
+        log('PDF.js worker test completed successfully!');
+      } catch (error) {
+        log('Error testing PDF.js worker: ' + error.message);
+        console.error('Error testing PDF.js worker:', error);
+      }
+    };
+  </script>
+</body>
+</html>

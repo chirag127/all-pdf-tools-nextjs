@@ -2,8 +2,11 @@
 
 /**
  * This file provides a robust mechanism for loading the PDF.js worker
- * It tries multiple approaches to ensure the worker is loaded correctly
+ * It uses a webpack-friendly approach to avoid "Critical dependency" warnings
  */
+
+// Import PDF.js library - using a static import to avoid webpack warnings
+import * as pdfjsLib from "pdfjs-dist";
 
 // Function to load the PDF.js worker
 export async function loadPdfWorker() {
@@ -13,9 +16,6 @@ export async function loadPdfWorker() {
     }
 
     try {
-        // Dynamically import PDF.js
-        const pdfjsLib = await import("pdfjs-dist");
-
         // Check if worker is already set
         if (pdfjsLib.GlobalWorkerOptions.workerSrc) {
             console.log(
@@ -25,98 +25,64 @@ export async function loadPdfWorker() {
             return;
         }
 
-        // Try multiple approaches to load the worker
-        await tryLoadWorker(pdfjsLib);
+        // Set up the worker using CDN approach
+        await setupWorkerFromCDN();
     } catch (error) {
         console.error("Error loading PDF.js worker:", error);
     }
 }
 
-// Try different approaches to load the worker
-async function tryLoadWorker(pdfjsLib: any) {
-    // Approach 1: Use the worker file from the public directory
-    try {
-        const baseUrl = window.location.origin;
-        const workerUrl = `${baseUrl}/pdf.worker.js`;
+// Set up the worker using CDN approach - most reliable for Next.js
+async function setupWorkerFromCDN() {
+    // Get the PDF.js version from the library
+    const pdfJsVersion = pdfjsLib.version || "5.2.133";
+    console.log("PDF.js version:", pdfJsVersion);
 
-        // Check if the worker file exists
-        const response = await fetch(workerUrl, { method: "HEAD" });
+    // Primary CDN: cdnjs
+    const cdnUrl = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsVersion}/pdf.worker.min.js`;
+
+    try {
+        // Verify the CDN URL is accessible
+        const response = await fetch(cdnUrl, { method: "HEAD" });
         if (response.ok) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-            console.log(
-                "PDF.js worker loaded from public directory:",
-                workerUrl
-            );
+            pdfjsLib.GlobalWorkerOptions.workerSrc = cdnUrl;
+            console.log("PDF.js worker loaded from CDN:", cdnUrl);
             return;
+        } else {
+            console.warn(
+                "CDN worker URL returned non-OK status:",
+                response.status
+            );
         }
-    } catch (error) {
+    } catch (cdnError) {
         console.warn(
-            "Failed to load PDF.js worker from public directory:",
-            error
+            `Failed to load PDF.js worker from primary CDN:`,
+            cdnError
         );
     }
 
-    // Approach 2: Try to load the worker from _next/static/worker
+    // Alternative CDN: unpkg
     try {
-        const baseUrl = window.location.origin;
-        const workerUrl = `${baseUrl}/_next/static/worker/pdf.worker.js`;
-
-        // Check if the worker file exists
-        const response = await fetch(workerUrl, { method: "HEAD" });
-        if (response.ok) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-            console.log(
-                "PDF.js worker loaded from _next/static/worker:",
-                workerUrl
-            );
-            return;
-        }
-    } catch (error) {
-        console.warn(
-            "Failed to load PDF.js worker from _next/static/worker:",
-            error
-        );
-    }
-
-    // Approach 3: Try to import the worker directly (for ESM builds)
-    try {
-        // Try multiple possible worker file paths
-        const workerPaths = [
-            "pdfjs-dist/build/pdf.worker.mjs",
-            "pdfjs-dist/build/pdf.worker.js",
-            "pdfjs-dist/legacy/build/pdf.worker.js",
-        ];
-
-        for (const workerPath of workerPaths) {
-            try {
-                // Import the worker directly - use any type to avoid TypeScript errors
-                await (import(workerPath) as Promise<any>);
-                console.log(
-                    `PDF.js worker loaded via direct import: ${workerPath}`
-                );
-                return;
-            } catch (importError) {
-                console.warn(
-                    `Failed to import worker from ${workerPath}:`,
-                    importError
-                );
-                // Continue to the next path
-            }
-        }
-
-        // If we get here, all import attempts failed
-        throw new Error("All direct worker imports failed");
-    } catch (error) {
-        console.warn("Failed to load PDF.js worker via direct imports:", error);
-    }
-
-    // Approach 4: Use a CDN version as a last resort
-    try {
-        const cdnUrl =
-            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-        pdfjsLib.GlobalWorkerOptions.workerSrc = cdnUrl;
-        console.log("PDF.js worker loaded from CDN:", cdnUrl);
+        const unpkgUrl = `https://unpkg.com/pdfjs-dist@${pdfJsVersion}/build/pdf.worker.min.js`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = unpkgUrl;
+        console.log("PDF.js worker loaded from alternative CDN:", unpkgUrl);
         return;
+    } catch (unpkgError) {
+        console.warn(
+            `Failed to load PDF.js worker from alternative CDN:`,
+            unpkgError
+        );
+    }
+
+    // Fallback to a known working version if the exact version isn't available
+    try {
+        const fallbackCdnUrl =
+            "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/5.2.133/pdf.worker.min.js";
+        pdfjsLib.GlobalWorkerOptions.workerSrc = fallbackCdnUrl;
+        console.log(
+            "PDF.js worker loaded from CDN (fallback):",
+            fallbackCdnUrl
+        );
     } catch (error) {
         console.error("All attempts to load PDF.js worker failed:", error);
     }

@@ -21,8 +21,13 @@ export async function generateStaticParams() {
 
 // Generate metadata for each page
 export async function generateMetadata({ params }) {
+    // Await the params object to fix Next.js 15.3.2 compatibility
+    const resolvedParams = await params;
+
     // Find the tool info from the configuration
-    const categoryInfo = pdfTools.find((cat) => cat.id === params.category);
+    const categoryInfo = pdfTools.find(
+        (cat) => cat.id === resolvedParams.category
+    );
     if (!categoryInfo) {
         return {
             title: "PDF Tool Not Found",
@@ -30,7 +35,9 @@ export async function generateMetadata({ params }) {
         };
     }
 
-    const toolInfo = categoryInfo.tools.find((t) => t.id === params.tool);
+    const toolInfo = categoryInfo.tools.find(
+        (t) => t.id === resolvedParams.tool
+    );
     if (!toolInfo) {
         return {
             title: "PDF Tool Not Found",

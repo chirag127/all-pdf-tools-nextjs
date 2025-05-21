@@ -4,24 +4,8 @@
 import { PDFDocument, StandardFonts, rgb, degrees } from "pdf-lib";
 // Import the DOMMatrix polyfill for server-side rendering
 import "./domMatrixPolyfill";
-
-// We'll dynamically import PDF.js to avoid SSR issues
-let pdfjsLib: any = null;
-
-/**
- * Load PDF.js library dynamically
- */
-async function loadPdfJs() {
-    if (!pdfjsLib) {
-        try {
-            pdfjsLib = await import("pdfjs-dist");
-        } catch (error) {
-            console.error("Error loading PDF.js:", error);
-            throw new Error("Failed to load PDF.js library");
-        }
-    }
-    return pdfjsLib;
-}
+// Import PDF.js statically to avoid webpack warnings
+import * as pdfjsLib from "pdfjs-dist";
 
 /**
  * Extract text from a PDF file
@@ -31,9 +15,6 @@ export async function extractText(
     password?: string
 ): Promise<string> {
     try {
-        // Dynamically load PDF.js
-        const pdfjs = await loadPdfJs();
-
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
@@ -43,7 +24,7 @@ export async function extractText(
             password: password || undefined,
         };
 
-        const pdf = await pdfjs.getDocument(options).promise;
+        const pdf = await pdfjsLib.getDocument(options).promise;
         let text = "";
 
         // Extract text from each page
@@ -73,9 +54,6 @@ export async function getPageCount(
     password?: string
 ): Promise<number> {
     try {
-        // Dynamically load PDF.js
-        const pdfjs = await loadPdfJs();
-
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
@@ -85,7 +63,7 @@ export async function getPageCount(
             password: password || undefined,
         };
 
-        const pdf = await pdfjs.getDocument(options).promise;
+        const pdf = await pdfjsLib.getDocument(options).promise;
         const pageCount = pdf.numPages;
         pdf.destroy();
         return pageCount;
@@ -104,9 +82,6 @@ export async function getPagePreview(
     password?: string
 ): Promise<string> {
     try {
-        // Dynamically load PDF.js
-        const pdfjs = await loadPdfJs();
-
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
@@ -116,7 +91,7 @@ export async function getPagePreview(
             password: password || undefined,
         };
 
-        const pdf = await pdfjs.getDocument(options).promise;
+        const pdf = await pdfjsLib.getDocument(options).promise;
         const page = await pdf.getPage(pageNumber);
 
         const viewport = page.getViewport({ scale: 1.0 });

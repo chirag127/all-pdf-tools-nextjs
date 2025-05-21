@@ -83,6 +83,12 @@ const nextConfig = {
         domains: ["localhost"],
     },
 
+    // For local development, do NOT use static export
+    // output: "export",
+
+    // Use empty basePath for local development
+    basePath: "",
+
     // Skip prerendering for pages that use browser-specific APIs
     skipTrailingSlashRedirect: true,
     skipMiddlewareUrlNormalize: true,

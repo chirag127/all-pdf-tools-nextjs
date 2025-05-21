@@ -7,8 +7,10 @@ export { generateStaticParams, generateMetadata };
 // Define the layout component
 export default function PdfToolLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ category: string; tool: string }>;
 }) {
   return <>{children}</>;
 }
