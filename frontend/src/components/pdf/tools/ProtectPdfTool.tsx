@@ -73,7 +73,15 @@ export default function ProtectPdfTool() {
       setIsProcessing(true);
       setProgress(10);
 
-      // Try client-side protection first
+      // Set up a progress indicator
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + 5;
+          return newProgress >= 90 ? 90 : newProgress;
+        });
+      }, 300);
+
+      // Use the updated pdfUtils function that delegates to the backend
       try {
         const protectedPdfBytes = await pdfUtils.protectPdf(
           file,
@@ -85,43 +93,34 @@ export default function ProtectPdfTool() {
             modifying: allowModify
           }
         );
-        setProgress(80);
 
         // Create a Blob from the protected PDF bytes
         const blob = new Blob([protectedPdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
 
+        clearInterval(progressInterval);
         setProgress(100);
         setResultUrl(url);
         setIsProcessing(false);
-        return;
-      } catch (clientError) {
-        console.error('Client-side protection failed, falling back to server:', clientError);
-        setProgress(20);
+      } catch (error) {
+        // If the direct approach fails, try using the API
+        console.error('PDF protection via pdfUtils failed, trying API directly:', error);
+
+        // Call the API to protect PDF
+        const result = await pdfApi.protectPdf(
+          file,
+          userPassword,
+          ownerPassword,
+          allowPrint,
+          allowCopy,
+          allowModify
+        );
+
+        clearInterval(progressInterval);
+        setProgress(100);
+        setResultUrl(result.downloadUrl);
+        setIsProcessing(false);
       }
-
-      // Fall back to server-side protection if client-side fails
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + 5;
-          return newProgress >= 90 ? 90 : newProgress;
-        });
-      }, 300);
-
-      // Call the API to protect PDF
-      const result = await pdfApi.protectPdf(
-        file,
-        userPassword,
-        ownerPassword,
-        allowPrint,
-        allowCopy,
-        allowModify
-      );
-
-      clearInterval(progressInterval);
-      setProgress(100);
-      setResultUrl(result.downloadUrl);
-      setIsProcessing(false);
     } catch (err) {
       setIsProcessing(false);
       setError(err instanceof Error ? err.message : 'An error occurred while protecting the PDF.');

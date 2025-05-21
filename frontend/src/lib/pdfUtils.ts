@@ -15,7 +15,13 @@ export async function extractText(
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
-        const options: any = { data: arrayBuffer };
+        const options: {
+            data: ArrayBuffer;
+            password?: string;
+        } = {
+            data: arrayBuffer,
+        };
+
         if (password) {
             options.password = password;
         }
@@ -28,7 +34,7 @@ export async function extractText(
             const page = await pdf.getPage(i);
             const content = await page.getTextContent();
             const pageText = content.items
-                .map((item: any) => item.str)
+                .map((item) => ("str" in item ? item.str : ""))
                 .join(" ");
 
             text += pageText + "\n\n";
@@ -53,7 +59,13 @@ export async function getPageCount(
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
-        const options: any = { data: arrayBuffer };
+        const options: {
+            data: ArrayBuffer;
+            password?: string;
+        } = {
+            data: arrayBuffer,
+        };
+
         if (password) {
             options.password = password;
         }
@@ -80,7 +92,13 @@ export async function getPagePreview(
         const arrayBuffer = await file.arrayBuffer();
 
         // Create options object with password if provided
-        const options: any = { data: arrayBuffer };
+        const options: {
+            data: ArrayBuffer;
+            password?: string;
+        } = {
+            data: arrayBuffer,
+        };
+
         if (password) {
             options.password = password;
         }
@@ -332,62 +350,120 @@ export async function addTextWatermark(
 
 /**
  * Protect a PDF file with a password
+ *
+ * This function delegates the password protection to the backend server
+ * since PDF-lib doesn't support password protection directly.
+ *
+ * @throws Error if the server request fails
  */
 export async function protectPdf(
     file: File,
-    _userPassword?: string, // Prefixed with underscore to indicate it's not used
-    _ownerPassword?: string, // Prefixed with underscore to indicate it's not used
-    _permissions?: {
+    userPassword?: string,
+    ownerPassword?: string,
+    permissions?: {
         printing?: boolean;
         copying?: boolean;
         modifying?: boolean;
     }
 ): Promise<Uint8Array> {
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
+        // Create a FormData object to send to the server
+        const formData = new FormData();
+        formData.append("file", file);
 
-        // PDF-lib doesn't directly support password protection in save options
-        // We need to use a workaround by creating a new document with the same content
-        const pdfBytes = await pdf.save();
+        if (userPassword) {
+            formData.append("user_password", userPassword);
+        }
 
-        // Return the PDF bytes - in a real implementation, we would need to use
-        // a different library that supports encryption or handle this on the server
-        return pdfBytes;
+        if (ownerPassword) {
+            formData.append("owner_password", ownerPassword);
+        }
+
+        // Add permissions
+        formData.append("allow_print", String(permissions?.printing !== false));
+        formData.append("allow_copy", String(permissions?.copying !== false));
+        formData.append(
+            "allow_modify",
+            String(permissions?.modifying !== false)
+        );
+
+        // Send the request to the server
+        const response = await fetch("/api/v1/pdf/protect", {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Failed to protect PDF");
+        }
+
+        // Get the download URL from the response
+        const data = await response.json();
+
+        // Fetch the protected PDF
+        const pdfResponse = await fetch(data.download_url);
+        if (!pdfResponse.ok) {
+            throw new Error("Failed to download protected PDF");
+        }
+
+        // Convert the response to an ArrayBuffer and then to Uint8Array
+        const arrayBuffer = await pdfResponse.arrayBuffer();
+        return new Uint8Array(arrayBuffer);
     } catch (error) {
         console.error("Error protecting PDF:", error);
-        throw new Error("Failed to protect PDF");
+        throw error instanceof Error
+            ? error
+            : new Error("Failed to protect PDF");
     }
 }
 
 /**
  * Unlock a password-protected PDF
+ *
+ * This function delegates the password decryption to the backend server
+ * since PDF-lib doesn't support password decryption directly.
+ *
+ * @throws Error if the password is incorrect or the server request fails
  */
 export async function unlockPdf(
     file: File,
-    _password: string // Prefixed with underscore to indicate it's not used
+    password: string
 ): Promise<Uint8Array> {
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        // PDF-lib doesn't support password in LoadOptions directly
-        // We need to handle this differently
-        let pdf;
-        try {
-            // Try to load the PDF - this will throw an error if it's encrypted
-            pdf = await PDFDocument.load(arrayBuffer);
-        } catch (error) {
-            // If loading fails, it might be due to encryption
-            // In a real implementation, we would need server-side handling
-            throw new Error(
-                "Failed to unlock PDF. The password may be incorrect."
-            );
+        // Create a FormData object to send to the server
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("password", password);
+
+        // Send the request to the server
+        const response = await fetch("/api/v1/pdf/unlock", {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || "Failed to unlock PDF");
         }
 
-        // Save the PDF without password protection
-        return await pdf.save();
+        // Get the download URL from the response
+        const data = await response.json();
+
+        // Fetch the unlocked PDF
+        const pdfResponse = await fetch(data.download_url);
+        if (!pdfResponse.ok) {
+            throw new Error("Failed to download unlocked PDF");
+        }
+
+        // Convert the response to an ArrayBuffer and then to Uint8Array
+        const arrayBuffer = await pdfResponse.arrayBuffer();
+        return new Uint8Array(arrayBuffer);
     } catch (error) {
         console.error("Error unlocking PDF:", error);
-        throw new Error("Failed to unlock PDF. The password may be incorrect.");
+        throw error instanceof Error
+            ? error
+            : new Error("Failed to unlock PDF");
     }
 }
 
@@ -396,18 +472,19 @@ export async function unlockPdf(
  */
 export async function compressPdf(
     file: File,
-    _quality: number = 0.75 // Prefixed with underscore to indicate it's not used
+    quality: number = 0.75 // We'll use this to determine compression level
 ): Promise<Uint8Array> {
     try {
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await PDFDocument.load(arrayBuffer);
 
         // Save with compression options
-        // PDF-lib only supports useObjectStreams in SaveOptions
+        // PDF-lib has limited compression options
+        // We'll use the quality parameter to determine if we should use compression
+        const compressionEnabled = quality < 0.9;
+
         return await pdf.save({
-            useObjectStreams: true,
-            // Note: objectCompressionLevel is not directly supported
-            // In a real implementation, we would need a different approach
+            useObjectStreams: compressionEnabled,
         });
     } catch (error) {
         console.error("Error compressing PDF:", error);

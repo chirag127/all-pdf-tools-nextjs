@@ -21,14 +21,14 @@ export default function UnlockPdfTool() {
   useEffect(() => {
     const checkPasswordProtection = async () => {
       if (!file) return;
-      
+
       try {
         // Try to get the page count without a password
         await pdfUtils.getPageCount(file);
-        
+
         // If we get here, the file is not password protected
         setIsPasswordProtected(false);
-        
+
         // Generate preview of first page
         const preview = await pdfUtils.getPagePreview(file, 1);
         setPreviewUrl(preview);
@@ -40,7 +40,7 @@ export default function UnlockPdfTool() {
         setError('This PDF appears to be password protected. Please enter the password to unlock it.');
       }
     };
-    
+
     checkPasswordProtection();
   }, [file]);
 
@@ -74,17 +74,23 @@ export default function UnlockPdfTool() {
     try {
       setIsProcessing(true);
       setProgress(10);
-      
-      // Try client-side unlocking first
+
+      // Set up a progress indicator
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          const newProgress = prev + 5;
+          return newProgress >= 90 ? 90 : newProgress;
+        });
+      }, 300);
+
+      // Use the updated pdfUtils function that delegates to the backend
       try {
-        // First try to load the PDF with the password
         const unlockedPdfBytes = await pdfUtils.unlockPdf(file, password);
-        setProgress(80);
-        
+
         // Create a Blob from the unlocked PDF bytes
         const blob = new Blob([unlockedPdfBytes], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
-        
+
         // Try to generate a preview now that we have the password
         try {
           const preview = await pdfUtils.getPagePreview(file, 1, password);
@@ -92,47 +98,40 @@ export default function UnlockPdfTool() {
         } catch (previewError) {
           console.error('Error generating preview:', previewError);
         }
-        
+
+        clearInterval(progressInterval);
         setProgress(100);
         setResultUrl(url);
         setIsProcessing(false);
-        return;
-      } catch (clientError) {
-        console.error('Client-side unlocking failed, falling back to server:', clientError);
-        
-        if (clientError.message?.includes('password')) {
+      } catch (error) {
+        // If the direct approach fails, try using the API
+        console.error('PDF unlocking via pdfUtils failed, trying API directly:', error);
+
+        // Check if it's a password error
+        if (error instanceof Error && error.message?.includes('password')) {
+          clearInterval(progressInterval);
           setIsProcessing(false);
           setError('Incorrect password. Please try again.');
           return;
         }
-        
-        setProgress(20);
+
+        // Call the API to unlock PDF
+        const result = await pdfApi.unlockPdf(file, password);
+
+        clearInterval(progressInterval);
+        setProgress(100);
+        setResultUrl(result.downloadUrl);
+        setIsProcessing(false);
       }
-      
-      // Fall back to server-side unlocking if client-side fails
-      const progressInterval = setInterval(() => {
-        setProgress(prev => {
-          const newProgress = prev + 5;
-          return newProgress >= 90 ? 90 : newProgress;
-        });
-      }, 300);
-      
-      // Call the API to unlock PDF
-      const result = await pdfApi.unlockPdf(file, password);
-      
-      clearInterval(progressInterval);
-      setProgress(100);
-      setResultUrl(result.downloadUrl);
-      setIsProcessing(false);
     } catch (err) {
       setIsProcessing(false);
-      
+
       if (err instanceof Error && err.message?.includes('password')) {
         setError('Incorrect password. Please try again.');
       } else {
         setError(err instanceof Error ? err.message : 'An error occurred while unlocking the PDF.');
       }
-      
+
       console.error('Error unlocking PDF:', err);
     }
   };
@@ -140,7 +139,7 @@ export default function UnlockPdfTool() {
   const handleDownload = () => {
     if (resultUrl) {
       const fileName = `${file?.name.replace('.pdf', '') || 'unlocked'}_unlocked.pdf`;
-      
+
       // Create an anchor element and trigger download
       const a = document.createElement('a');
       a.href = resultUrl;
@@ -164,7 +163,7 @@ export default function UnlockPdfTool() {
               onClear={handleClearFile}
             />
           </div>
-          
+
           {/* Error message */}
           {error && (
             <div className="rounded-md bg-red-50 p-4 dark:bg-red-900/20">
@@ -180,10 +179,10 @@ export default function UnlockPdfTool() {
           {file && previewUrl && (
             <div className="flex items-center space-x-4">
               <div className="h-24 w-20 overflow-hidden rounded border border-gray-200 dark:border-gray-700">
-                <img 
-                  src={previewUrl} 
-                  alt={`Preview of ${file.name}`} 
-                  className="h-full w-full object-contain" 
+                <img
+                  src={previewUrl}
+                  alt={`Preview of ${file.name}`}
+                  className="h-full w-full object-contain"
                 />
               </div>
               <div>
@@ -244,7 +243,7 @@ export default function UnlockPdfTool() {
           </div>
         </>
       )}
-      
+
       {/* Processing indicator */}
       {isProcessing && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-900/20">

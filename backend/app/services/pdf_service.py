@@ -430,48 +430,102 @@ def protect_pdf(file_path: str, output_path: str, user_password: Optional[str] =
         Path to the protected PDF
     """
     try:
+        # First check if the file is already encrypted
         with open(file_path, 'rb') as file:
             reader = PdfReader(file)
-            writer = PdfWriter()
+            if reader.is_encrypted:
+                raise ValueError("The PDF is already encrypted. Please decrypt it first.")
 
-            # Add all pages to the writer
-            for page in reader.pages:
-                writer.add_page(page)
+        # Try with PyPDF2 first
+        try:
+            with open(file_path, 'rb') as file:
+                reader = PdfReader(file)
+                writer = PdfWriter()
 
-            # Default permissions (allow everything)
-            default_permissions = {
-                "print": True,
-                "modify": True,
-                "copy": True,
-                "annotate": True,
-                "form": True,
-                "extract": True,
-                "assemble": True,
-                "print_high_quality": True
-            }
+                # Add all pages to the writer
+                for page in reader.pages:
+                    writer.add_page(page)
 
-            # Use provided permissions or defaults
-            perms = permissions or default_permissions
+                # Default permissions (allow everything)
+                default_permissions = {
+                    "print": True,
+                    "modify": True,
+                    "copy": True,
+                    "annotate": True,
+                    "form": True,
+                    "extract": True,
+                    "assemble": True,
+                    "print_high_quality": True
+                }
 
-            # If owner_password is not provided, use user_password
-            if owner_password is None and user_password is not None:
-                owner_password = user_password
+                # Use provided permissions or defaults
+                perms = permissions or default_permissions
 
-            # Encrypt the PDF
-            writer.encrypt(
-                user_password=user_password,
-                owner_password=owner_password,
-                use_128bit=True,
-                permissions_flag=0
-            )
+                # If owner_password is not provided, use user_password
+                if owner_password is None and user_password is not None:
+                    owner_password = user_password
 
-            with open(output_path, 'wb') as output:
-                writer.write(output)
+                # Calculate permissions flag
+                permissions_flag = 0
+                if perms.get("print", True):
+                    permissions_flag |= PyPDF2.constants.PageAttributes.PRINT
+                if perms.get("modify", True):
+                    permissions_flag |= PyPDF2.constants.PageAttributes.MODIFY_CONTENTS
+                if perms.get("copy", True):
+                    permissions_flag |= PyPDF2.constants.PageAttributes.EXTRACT
+                if perms.get("annotate", True):
+                    permissions_flag |= PyPDF2.constants.PageAttributes.MODIFY_ANNOTATIONS
 
-            return output_path
+                # Encrypt the PDF
+                writer.encrypt(
+                    user_password=user_password,
+                    owner_password=owner_password,
+                    use_128bit=True,
+                    permissions_flag=permissions_flag
+                )
+
+                with open(output_path, 'wb') as output:
+                    writer.write(output)
+
+                return output_path
+        except Exception as pypdf_error:
+            logger.warning(f"PyPDF2 encryption failed, trying pikepdf: {pypdf_error}")
+
+            # Fall back to pikepdf if PyPDF2 fails
+            try:
+                # Convert permissions to pikepdf format
+                pikepdf_perms = pikepdf.Permissions(
+                    accessibility=True,  # Always allow accessibility
+                    extract=perms.get("copy", True),
+                    modify_annotation=perms.get("annotate", True),
+                    modify_assembly=perms.get("assemble", True),
+                    modify_form=perms.get("form", True),
+                    modify_other=perms.get("modify", True),
+                    print_lowres=perms.get("print", True),
+                    print_highres=perms.get("print_high_quality", True)
+                )
+
+                with pikepdf.open(file_path) as pdf:
+                    # Save with encryption
+                    pdf.save(output_path,
+                             encryption=pikepdf.Encryption(
+                                 user=user_password,
+                                 owner=owner_password or user_password,
+                                 allow=pikepdf_perms,
+                                 R=4  # Use 128-bit encryption
+                             ))
+
+                return output_path
+            except Exception as pikepdf_error:
+                logger.error(f"Both PyPDF2 and pikepdf encryption failed: {pikepdf_error}")
+                raise ValueError("Failed to encrypt PDF. The file might be corrupted or incompatible.")
+    except ValueError as ve:
+        # Re-raise ValueError for specific error messages
+        logger.error(f"Error protecting PDF: {ve}")
+        raise
     except Exception as e:
         logger.error(f"Error protecting PDF: {e}")
-        raise
+        raise ValueError(f"Failed to protect PDF: {str(e)}")
 
 def unlock_pdf(file_path: str, output_path: str, password: str) -> str:
     """Remove password protection from a PDF.
@@ -485,29 +539,61 @@ def unlock_pdf(file_path: str, output_path: str, password: str) -> str:
         Path to the unlocked PDF
     """
     try:
+        # First check if the file is actually encrypted
         with open(file_path, 'rb') as file:
             reader = PdfReader(file)
+            if not reader.is_encrypted:
+                # If not encrypted, just copy the file
+                with open(output_path, 'wb') as output:
+                    output.write(file.read())
+                return output_path
 
-            # Check if the PDF is encrypted
-            if reader.is_encrypted:
+        # Try with PyPDF2 first
+        try:
+            with open(file_path, 'rb') as file:
+                reader = PdfReader(file)
+
                 # Try to decrypt with the provided password
-                if reader.decrypt(password) != 1:
+                decrypt_result = reader.decrypt(password)
+                if decrypt_result != 1:
                     raise ValueError("Incorrect password")
 
-            writer = PdfWriter()
+                writer = PdfWriter()
 
-            # Add all pages to the writer
-            for page in reader.pages:
-                writer.add_page(page)
+                # Add all pages to the writer
+                for page in reader.pages:
+                    writer.add_page(page)
 
-            # Write the unlocked PDF
-            with open(output_path, 'wb') as output:
-                writer.write(output)
+                with open(output_path, 'wb') as output:
+                    writer.write(output)
 
-            return output_path
+                return output_path
+        except ValueError:
+            # Re-raise password errors
+            raise
+        except Exception as pypdf_error:
+            logger.warning(f"PyPDF2 decryption failed, trying pikepdf: {pypdf_error}")
+
+            # Fall back to pikepdf if PyPDF2 fails
+            try:
+                # Try to open with pikepdf
+                with pikepdf.open(file_path, password=password) as pdf:
+                    # Save without encryption
+                    pdf.save(output_path)
+
+                return output_path
+            except pikepdf.PasswordError:
+                raise ValueError("Incorrect password")
+            except Exception as pikepdf_error:
+                logger.error(f"Both PyPDF2 and pikepdf decryption failed: {pikepdf_error}")
+                raise ValueError("Failed to decrypt PDF. The file might be corrupted or incompatible.")
+    except ValueError as ve:
+        # Re-raise ValueError for specific error messages
+        logger.error(f"Error unlocking PDF: {ve}")
+        raise
     except Exception as e:
         logger.error(f"Error unlocking PDF: {e}")
-        raise
+        raise ValueError(f"Failed to unlock PDF: {str(e)}")
 
 def compress_pdf(file_path: str, output_path: str, quality: str = "medium") -> str:
     """Compress a PDF to reduce file size.
