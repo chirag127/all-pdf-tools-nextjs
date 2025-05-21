@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React PDF Test</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/react-pdf@7.7.0/dist/umd/react-pdf.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .pdf-container {
+      border: 1px solid #ccc;
+      margin-top: 20px;
+      padding: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #0070f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0051a8;
+    }
+    .page-info {
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>React PDF Test</h1>
+    <p>This page tests the React PDF library to ensure it's working correctly.</p>
+    
+    <div id="pdf-viewer"></div>
+  </div>
+
+  <script>
+    // Set up the PDF.js worker
+    window.ReactPDF = ReactPdf;
+    ReactPDF.pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${ReactPDF.pdfjs.version}/pdf.worker.min.js`;
+    
+    // Sample PDF URL - replace with your own if needed
+    const samplePdfUrl = 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf';
+    
+    // Create a simple PDF viewer component
+    const PdfViewer = () => {
+      const [numPages, setNumPages] = React.useState(null);
+      const [pageNumber, setPageNumber] = React.useState(1);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(null);
+      
+      const onDocumentLoadSuccess = ({ numPages }) => {
+        setNumPages(numPages);
+        setLoading(false);
+      };
+      
+      const onDocumentLoadError = (error) => {
+        console.error('Error loading PDF:', error);
+        setError('Failed to load PDF document. Please try again or use a different PDF file.');
+        setLoading(false);
+      };
+      
+      const changePage = (offset) => {
+        setPageNumber(prevPageNumber => {
+          const newPageNumber = prevPageNumber + offset;
+          return Math.max(1, Math.min(newPageNumber, numPages));
+        });
+      };
+      
+      const previousPage = () => changePage(-1);
+      const nextPage = () => changePage(1);
+      
+      return React.createElement(
+        'div',
+        { className: 'pdf-container' },
+        loading && React.createElement('div', null, 'Loading PDF...'),
+        error && React.createElement('div', { style: { color: 'red' } }, error),
+        React.createElement(
+          'div',
+          { className: 'controls' },
+          React.createElement('button', { onClick: previousPage, disabled: pageNumber <= 1 }, 'Previous'),
+          React.createElement('button', { onClick: nextPage, disabled: pageNumber >= numPages }, 'Next'),
+          React.createElement('span', { className: 'page-info' }, `Page ${pageNumber} of ${numPages || '?'}`)
+        ),
+        React.createElement(
+          ReactPDF.Document,
+          {
+            file: samplePdfUrl,
+            onLoadSuccess: onDocumentLoadSuccess,
+            onLoadError: onDocumentLoadError,
+            loading: React.createElement('div', null, 'Loading PDF...'),
+          },
+          React.createElement(
+            ReactPDF.Page,
+            {
+              pageNumber: pageNumber,
+              width: 600,
+              renderTextLayer: false,
+              renderAnnotationLayer: true,
+            }
+          )
+        )
+      );
+    };
+    
+    // Render the PDF viewer
+    const container = document.getElementById('pdf-viewer');
+    const root = ReactDOM.createRoot(container);
+    root.render(React.createElement(PdfViewer));
+  </script>
+</body>
+</html>

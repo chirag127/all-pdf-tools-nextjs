@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { FiFileText, FiImage, FiGrid } from 'react-icons/fi';
 import { Button } from '@/components/common/Button';
-import PdfViewer from './PdfViewer';
+import ReactPdfViewer from './ReactPdfViewer';
 import PdfTextExtractor from './PdfTextExtractor';
-import PdfThumbnails from './PdfThumbnails';
-import setupPdfWorker from '@/lib/pdfWorker';
+import ReactPdfThumbnails from './ReactPdfThumbnails';
 
 type ViewMode = 'pdf' | 'text' | 'both';
 
@@ -30,12 +29,8 @@ export default function AdvancedPdfViewer({
   const [numPages, setNumPages] = useState<number>(0);
   const [extractedText, setExtractedText] = useState<string>('');
   const [password, setPassword] = useState<string>(initialPassword);
-  const [isPasswordProtected, setIsPasswordProtected] = useState<boolean>(false);
 
-  // Initialize PDF.js worker
-  useEffect(() => {
-    setupPdfWorker();
-  }, []);
+  // No need to initialize PDF.js worker as react-pdf handles it internally
 
   // Handle document loaded
   const handleDocumentLoaded = (pages: number) => {
@@ -60,10 +55,8 @@ export default function AdvancedPdfViewer({
     }
   };
 
-  // Handle password protected status
-  const handlePasswordProtected = (isProtected: boolean) => {
-    setIsPasswordProtected(isProtected);
-  };
+  // No longer need to handle password protected status separately
+  // as react-pdf handles it internally
 
   // Handle password change from child components
   const handlePasswordChange = (newPassword: string) => {
@@ -110,12 +103,11 @@ export default function AdvancedPdfViewer({
         {/* Thumbnails sidebar */}
         {showThumbnails && (
           <div className="hidden w-24 flex-shrink-0 overflow-y-auto md:block">
-            <PdfThumbnails
+            <ReactPdfThumbnails
               file={file}
               currentPage={currentPage}
               onThumbnailClick={handleThumbnailClick}
               className="sticky top-4"
-              onPasswordProtected={handlePasswordProtected}
               password={password}
             />
           </div>
@@ -124,7 +116,7 @@ export default function AdvancedPdfViewer({
         {/* Main viewer area */}
         <div className="flex flex-1 flex-col">
           {viewMode === 'pdf' && (
-            <PdfViewer
+            <ReactPdfViewer
               file={file}
               initialPage={currentPage}
               onPageChange={handlePageChange}
@@ -143,7 +135,7 @@ export default function AdvancedPdfViewer({
 
           {viewMode === 'both' && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <PdfViewer
+              <ReactPdfViewer
                 file={file}
                 initialPage={currentPage}
                 onPageChange={handlePageChange}
