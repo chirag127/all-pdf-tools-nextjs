@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Header from '@/components/common/Header';
 import Footer from '@/components/common/Footer';
 import { useSettingsStore } from '@/lib/store';
+import setupPdfWorker from '@/lib/pdfWorker';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const { darkMode } = useSettingsStore();
@@ -12,6 +13,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   // Only run on client side
   useEffect(() => {
     setMounted(true);
+
+    // Initialize PDF.js worker
+    setupPdfWorker();
   }, []);
 
   // Apply dark mode class to html element

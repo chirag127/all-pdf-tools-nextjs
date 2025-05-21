@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from "next/image";
-import { FiFileText, FiTool, FiCpu, FiLock, FiEdit, FiRefreshCw } from 'react-icons/fi';
+import { FiFileText, FiTool, FiCpu, FiLock, FiEdit, FiRefreshCw, FiEye } from 'react-icons/fi';
 import { Card, CardGrid } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import ClientLayout from '@/components/common/ClientLayout';
@@ -11,6 +11,12 @@ import ClientLayout from '@/components/common/ClientLayout';
 export default function Home() {
   // Feature categories
   const featureCategories = [
+    {
+      title: 'PDF Viewer',
+      description: 'View PDFs with text extraction, thumbnails, and more',
+      icon: <FiEye size={24} className="text-indigo-500" />,
+      href: '/pdf-viewer',
+    },
     {
       title: 'Document Organization',
       description: 'Organize and manage your PDF documents efficiently',

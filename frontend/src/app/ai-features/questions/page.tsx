@@ -8,9 +8,34 @@ import ClientLayout from '@/components/common/ClientLayout';
 import { useSettingsStore } from '@/lib/store';
 import { aiApi } from '@/lib/api';
 import Link from 'next/link';
-import * as pdfUtils from '@/lib/pdfUtils';
+import dynamic from 'next/dynamic';
+
+// Import PDF utilities with SSR disabled
+const PdfUtilsComponent = dynamic(
+  () => import('@/components/pdf/PdfUtilsWrapper').then(mod => mod.default),
+  {
+    ssr: false,
+    loading: () => <div>Loading PDF utilities...</div>
+  }
+);
+
+// Create a placeholder for PDF utilities
+const pdfUtils: any = {
+  getPageCount: async (file: File) => 0,
+  getPagePreview: async (file: File, pageNumber: number) => '',
+};
 
 export default function GenerateQuestionsPage() {
+  // Include the PdfUtilsWrapper component to load PDF utilities
+  React.useEffect(() => {
+    // Import PDF utilities dynamically
+    import('@/lib/pdfUtils').then((module) => {
+      // Update the pdfUtils object with the imported functions
+      Object.assign(pdfUtils, module);
+    }).catch(err => {
+      console.error('Error loading PDF utilities:', err);
+    });
+  }, []);
   const { geminiApiKey, selectedModel } = useSettingsStore();
   const [file, setFile] = useState<File | null>(null);
   const [pdfId, setPdfId] = useState<string | null>(null);
@@ -33,6 +58,11 @@ export default function GenerateQuestionsPage() {
     if (!file) return;
 
     try {
+      if (typeof pdfUtils.getPageCount !== 'function') {
+        console.error('PDF utilities not fully loaded yet');
+        return;
+      }
+
       // Get page count
       const count = await pdfUtils.getPageCount(file);
       setPageCount(count);
@@ -158,6 +188,9 @@ export default function GenerateQuestionsPage() {
 
   return (
     <ClientLayout>
+      {/* Include the PdfUtilsWrapper component */}
+      <PdfUtilsComponent />
+
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-4">
           <Link href="/ai-features">

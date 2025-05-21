@@ -29,6 +29,13 @@ import RedactPdfTool from '@/components/pdf/tools/RedactPdfTool';
 // Temporarily comment out the ComparePdfsTool import until it's fixed
 // import ComparePdfsTool from '@/components/pdf/tools/ComparePdfsTool';
 import ProcessingIndicator from '@/components/pdf/ProcessingIndicator';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the PDF viewer demo to avoid SSR issues
+const PdfViewerDemo = dynamic(() => import('@/app/pdf-viewer-demo/page'), {
+  ssr: false,
+  loading: () => <div className="flex h-96 items-center justify-center">Loading PDF Viewer...</div>,
+});
 
 export default function PdfToolPage() {
   const params = useParams();
@@ -70,6 +77,16 @@ export default function PdfToolPage() {
   // Render the appropriate tool component based on the category and tool
   const renderToolComponent = () => {
     if (!toolInfo) return null;
+
+    // PDF Viewer tools
+    if (category === 'viewer') {
+      switch (tool) {
+        case 'demo':
+          return <PdfViewerDemo />;
+        default:
+          return <div>Tool not implemented yet</div>;
+      }
+    }
 
     // Organization tools
     if (category === 'organization') {

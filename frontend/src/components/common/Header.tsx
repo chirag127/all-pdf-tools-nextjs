@@ -19,6 +19,7 @@ export default function Header() {
   // Navigation items
   const navItems = [
     { name: 'Home', href: '/' },
+    { name: 'PDF Viewer', href: '/pdf-viewer' },
     { name: 'PDF Tools', href: '/pdf-tools' },
     { name: 'AI Features', href: '/ai-features' },
   ];
