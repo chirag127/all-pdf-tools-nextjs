@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    // Comment out the export option for development
-    // output: "export",
+    // Enable static export for GitHub Pages deployment
+    output: "export",
     basePath: process.env.NEXT_PUBLIC_BASE_PATH || "",
     images: {
         unoptimized: true,
