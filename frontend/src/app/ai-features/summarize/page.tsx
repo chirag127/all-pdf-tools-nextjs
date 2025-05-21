@@ -74,7 +74,7 @@ export default function SummarizePdfPage() {
     try {
       const response = await aiApi.summarizePdf(
         geminiApiKey,
-        file,
+        file || undefined,
         pdfId || undefined,
         summaryLength,
         selectedModel
@@ -163,7 +163,7 @@ export default function SummarizePdfPage() {
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">Upload PDF</h2>
-            
+
             {!file ? (
               <FileUpload
                 onFileSelect={handleFileSelect}

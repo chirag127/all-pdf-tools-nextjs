@@ -27,7 +27,6 @@ export default function ChatWithPdfPage() {
   const [error, setError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number>(0);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [extractedText, setExtractedText] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom of messages
@@ -57,8 +56,7 @@ export default function ChatWithPdfPage() {
       setPreviewUrl(preview);
 
       // Extract text from PDF
-      const text = await pdfUtils.extractText(file);
-      setExtractedText(text);
+      await pdfUtils.extractText(file);
 
       // Generate a unique ID for this PDF
       const id = `pdf-${Date.now()}`;
@@ -83,7 +81,6 @@ export default function ChatWithPdfPage() {
     setError(null);
     setPdfId(null);
     setMessages([]);
-    setExtractedText('');
   };
 
   const handleClearFile = () => {
@@ -92,7 +89,6 @@ export default function ChatWithPdfPage() {
     setMessages([]);
     setPreviewUrl(null);
     setPageCount(0);
-    setExtractedText('');
   };
 
   const handleSendMessage = async () => {
@@ -113,7 +109,7 @@ export default function ChatWithPdfPage() {
       const response = await aiApi.chatWithPdf(
         geminiApiKey,
         input,
-        file,
+        file || undefined,
         pdfId || undefined,
         selectedModel
       );
@@ -190,7 +186,7 @@ export default function ChatWithPdfPage() {
           <div className="mb-4 w-full md:mb-0 md:w-1/3">
             <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
               <h2 className="mb-4 text-xl font-bold">Upload PDF</h2>
-              
+
               {!file ? (
                 <FileUpload
                   onFileSelect={handleFileSelect}
