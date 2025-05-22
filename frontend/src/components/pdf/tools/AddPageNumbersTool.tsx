@@ -88,7 +88,7 @@ export default function AddPageNumbersTool() {
           file,
           position,
           startNumber,
-          format.replace('{page_num}', '{page}')
+          format
         );
         setProgress(80);
 

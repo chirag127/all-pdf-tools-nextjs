@@ -153,7 +153,18 @@ export default function MergePdfTool() {
 
   const handleDownload = () => {
     if (resultUrl) {
-      window.open(resultUrl, '_blank');
+      // Create a meaningful filename for the merged PDF
+      const fileName = files.length > 0
+        ? `merged_${files[0].name.replace('.pdf', '')}_and_${files.length - 1}_more.pdf`
+        : 'merged_document.pdf';
+
+      // Create an anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = resultUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   };
 
