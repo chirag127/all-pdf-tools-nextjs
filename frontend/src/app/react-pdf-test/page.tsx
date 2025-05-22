@@ -11,10 +11,8 @@ import Link from 'next/link';
 export default function ReactPdfTestPage() {
   const [file, setFile] = useState<File | null>(null);
 
-  const handleFileChange = (files: File[]) => {
-    if (files.length > 0) {
-      setFile(files[0]);
-    }
+  const handleFileChange = (file: File) => {
+    setFile(file);
   };
 
   const handleClearFile = () => {
@@ -39,9 +37,8 @@ export default function ReactPdfTestPage() {
           <div className="mb-8">
             <h2 className="mb-4 text-xl font-semibold">Upload a PDF File</h2>
             <FileUpload
-              onFilesSelected={handleFileChange}
-              accept=".pdf"
-              maxFiles={1}
+              onFileSelect={handleFileChange}
+              accept={{ 'application/pdf': ['.pdf'] }}
               maxSize={50 * 1024 * 1024} // 50MB
               className="h-64"
             />
@@ -66,7 +63,7 @@ export default function ReactPdfTestPage() {
                 Change PDF
               </Button>
             </div>
-            
+
             <ReactPdfViewer
               file={file}
               className="min-h-[600px]"

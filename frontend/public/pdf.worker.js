@@ -57731,4 +57731,4 @@ globalThis.pdfjsWorker = {
 
 export { WorkerMessageHandler };
 
-//# sourceMappingURL=pdf.worker.mjs.map
+//# sourceMappingURL=pdf.worker.js.map
