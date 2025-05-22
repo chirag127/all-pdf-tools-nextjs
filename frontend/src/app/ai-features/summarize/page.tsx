@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/lib/store';
 import { aiApi } from '@/lib/api';
 import Link from 'next/link';
 import * as pdfUtils from '@/lib/pdfUtils';
+import AiFeatureLayout from '@/components/ai/AiFeatureLayout';
 
 export default function SummarizePdfPage() {
   const { geminiApiKey, selectedModel } = useSettingsStore();
@@ -115,50 +116,32 @@ export default function SummarizePdfPage() {
 
   if (!geminiApiKey) {
     return (
-      <ClientLayout>
-        <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-4">
-            <Link href="/ai-features">
-              <Button variant="ghost" className="mb-4">
-                <FiArrowLeft className="mr-2" /> Back to AI Features
+      <AiFeatureLayout
+        title="Summarize PDF"
+        description="Generate concise summaries of your PDF documents using AI"
+      >
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-900/20">
+          <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">API Key Required</h3>
+          <p className="mt-2 text-yellow-700 dark:text-yellow-300">
+            To use the Summarize PDF feature, you need to set up your Gemini API key in the settings.
+          </p>
+          <div className="mt-4">
+            <Link href="/settings">
+              <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/30">
+                Go to Settings
               </Button>
             </Link>
           </div>
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-900/20">
-            <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">API Key Required</h3>
-            <p className="mt-2 text-yellow-700 dark:text-yellow-300">
-              To use the Summarize PDF feature, you need to set up your Gemini API key in the settings.
-            </p>
-            <div className="mt-4">
-              <Link href="/settings">
-                <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/30">
-                  Go to Settings
-                </Button>
-              </Link>
-            </div>
-          </div>
         </div>
-      </ClientLayout>
+      </AiFeatureLayout>
     );
   }
 
   return (
-    <ClientLayout>
-      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-4">
-          <Link href="/ai-features">
-            <Button variant="ghost">
-              <FiArrowLeft className="mr-2" /> Back to AI Features
-            </Button>
-          </Link>
-        </div>
-
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold">Summarize PDF</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            Generate concise summaries of your PDF documents using AI
-          </p>
-        </div>
+    <AiFeatureLayout
+      title="Summarize PDF"
+      description="Generate concise summaries of your PDF documents using AI"
+    >
 
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
@@ -300,6 +283,6 @@ export default function SummarizePdfPage() {
           )}
         </div>
       </div>
-    </ClientLayout>
+    </AiFeatureLayout>
   );
 }

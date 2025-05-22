@@ -7,6 +7,7 @@ import { Card, CardGrid } from '@/components/common/Card';
 import { Button } from '@/components/common/Button';
 import { useSettingsStore } from '@/lib/store';
 import ClientLayout from '@/components/common/ClientLayout';
+import PdfToolsNavigation from '@/components/common/PdfToolsNavigation';
 
 export default function AiFeaturesPage() {
   const { geminiApiKey } = useSettingsStore();
@@ -51,6 +52,11 @@ export default function AiFeaturesPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             Leverage the power of AI to extract insights from your PDF documents
           </p>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden mb-8">
+          <PdfToolsNavigation />
         </div>
 
         {!geminiApiKey ? (

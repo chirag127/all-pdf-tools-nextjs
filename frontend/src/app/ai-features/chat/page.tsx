@@ -9,6 +9,7 @@ import { useSettingsStore } from '@/lib/store';
 import { aiApi } from '@/lib/api';
 import Link from 'next/link';
 import * as pdfUtils from '@/lib/pdfUtils';
+import AiFeatureLayout from '@/components/ai/AiFeatureLayout';
 
 interface Message {
   id: string;
@@ -156,43 +157,32 @@ export default function ChatWithPdfPage() {
 
   if (!geminiApiKey) {
     return (
-      <ClientLayout>
-        <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-4">
-            <Link href="/ai-features">
-              <Button variant="ghost" className="mb-4">
-                <FiArrowLeft className="mr-2" /> Back to AI Features
+      <AiFeatureLayout
+        title="Chat with PDF"
+        description="Ask questions about your PDF documents and get AI-powered answers"
+      >
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-900/20">
+          <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">API Key Required</h3>
+          <p className="mt-2 text-yellow-700 dark:text-yellow-300">
+            To use the Chat with PDF feature, you need to set up your Gemini API key in the settings.
+          </p>
+          <div className="mt-4">
+            <Link href="/settings">
+              <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/30">
+                Go to Settings
               </Button>
             </Link>
           </div>
-          <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-900/20">
-            <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">API Key Required</h3>
-            <p className="mt-2 text-yellow-700 dark:text-yellow-300">
-              To use the Chat with PDF feature, you need to set up your Gemini API key in the settings.
-            </p>
-            <div className="mt-4">
-              <Link href="/settings">
-                <Button variant="outline" className="border-yellow-500 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-700 dark:text-yellow-400 dark:hover:bg-yellow-900/30">
-                  Go to Settings
-                </Button>
-              </Link>
-            </div>
-          </div>
         </div>
-      </ClientLayout>
+      </AiFeatureLayout>
     );
   }
 
   return (
-    <ClientLayout>
-      <div className="container mx-auto flex h-[calc(100vh-64px)] flex-col px-4 py-4 sm:px-6 lg:px-8">
-        <div className="mb-4">
-          <Link href="/ai-features">
-            <Button variant="ghost">
-              <FiArrowLeft className="mr-2" /> Back to AI Features
-            </Button>
-          </Link>
-        </div>
+    <AiFeatureLayout
+      title="Chat with PDF"
+      description="Ask questions about your PDF documents and get AI-powered answers"
+    >
 
         <div className="flex flex-1 flex-col md:flex-row md:space-x-4">
           {/* PDF Upload/Preview Panel */}
@@ -319,6 +309,6 @@ export default function ChatWithPdfPage() {
           </div>
         </div>
       </div>
-    </ClientLayout>
+    </AiFeatureLayout>
   );
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/common/Button';
 import ClientLayout from '@/components/common/ClientLayout';
 import { usePdfStore } from '@/lib/store';
 import { pdfTools, getAllTools } from '@/lib/pdf-tools-config';
+import PdfToolsNavigation from '@/components/common/PdfToolsNavigation';
 
 import { useParams, useRouter } from 'next/navigation';
 import MergePdfTool from '@/components/pdf/tools/MergePdfTool';
@@ -182,50 +183,72 @@ export default function PdfToolPage(props: {
   return (
     <ClientLayout>
       <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            className="mb-4 flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            onClick={handleBack}
-          >
-            <FiArrowLeft className="mr-2" />
-            Back to PDF Tools
-          </Button>
-          <h1 className="text-3xl font-bold">{toolInfo.name}</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">
-            {toolInfo.description}
-          </p>
-          <div className="mt-1 text-sm text-gray-500 dark:text-gray-500">
-            Category: {toolInfo.category}
-          </div>
-        </div>
-
-        {/* Tool component */}
-        <div className="mb-8">{renderToolComponent()}</div>
-
-        {/* Processing indicator */}
-        {isProcessing && <ProcessingIndicator />}
-
-        {/* Result section */}
-        {resultUrl && !isProcessing && (
-          <div className="mt-8 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-900/20">
-            <h2 className="text-xl font-semibold text-green-800 dark:text-green-400">
-              PDF Processed Successfully
-            </h2>
-            <p className="mt-2 text-green-700 dark:text-green-300">
-              Your PDF has been processed successfully. You can download it now.
-            </p>
-            <div className="mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Navigation Sidebar */}
+          <div className="md:col-span-1">
+            <div className="mb-4 md:hidden">
               <Button
-                onClick={handleDownload}
-                className="flex items-center bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+                variant="ghost"
+                className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                onClick={handleBack}
               >
-                <FiDownload className="mr-2" />
-                Download PDF
+                <FiArrowLeft className="mr-2" />
+                Back to PDF Tools
               </Button>
             </div>
+            <PdfToolsNavigation className="sticky top-20" />
           </div>
-        )}
+
+          {/* Main Content */}
+          <div className="md:col-span-3">
+            <div className="mb-8">
+              <div className="hidden md:block">
+                <Button
+                  variant="ghost"
+                  className="mb-4 flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                  onClick={handleBack}
+                >
+                  <FiArrowLeft className="mr-2" />
+                  Back to PDF Tools
+                </Button>
+              </div>
+              <h1 className="text-3xl font-bold">{toolInfo.name}</h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                {toolInfo.description}
+              </p>
+              <div className="mt-1 text-sm text-gray-500 dark:text-gray-500">
+                Category: {toolInfo.category}
+              </div>
+            </div>
+
+            {/* Tool component */}
+            <div className="mb-8">{renderToolComponent()}</div>
+
+            {/* Processing indicator */}
+            {isProcessing && <ProcessingIndicator />}
+
+            {/* Result section */}
+            {resultUrl && !isProcessing && (
+              <div className="mt-8 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-900/20">
+                <h2 className="text-xl font-semibold text-green-800 dark:text-green-400">
+                  PDF Processed Successfully
+                </h2>
+                <p className="mt-2 text-green-700 dark:text-green-300">
+                  Your PDF has been processed successfully. You can download it now.
+                </p>
+                <div className="mt-4">
+                  <Button
+                    onClick={handleDownload}
+                    className="flex items-center bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+                  >
+                    <FiDownload className="mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </ClientLayout>
   );

@@ -5,6 +5,7 @@ import { FiFileText, FiTool, FiLock, FiEdit, FiRefreshCw } from 'react-icons/fi'
 import { Card, CardGrid } from '@/components/common/Card';
 import Link from 'next/link';
 import ClientLayout from '@/components/common/ClientLayout';
+import PdfToolsNavigation from '@/components/common/PdfToolsNavigation';
 
 export default function PdfToolsPage() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -92,6 +93,11 @@ export default function PdfToolsPage() {
           <p className="mt-2 text-gray-600 dark:text-gray-400">
             A comprehensive suite of tools to manage, edit, and enhance your PDF documents
           </p>
+        </div>
+
+        {/* Mobile Navigation */}
+        <div className="md:hidden mb-8">
+          <PdfToolsNavigation />
         </div>
 
         {/* Category navigation */}
