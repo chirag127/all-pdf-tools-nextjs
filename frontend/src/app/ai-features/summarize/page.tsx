@@ -142,8 +142,7 @@ export default function SummarizePdfPage() {
       title="Summarize PDF"
       description="Generate concise summaries of your PDF documents using AI"
     >
-
-        <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-4xl">
           <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
             <h2 className="mb-4 text-xl font-bold">Upload PDF</h2>
 
@@ -281,7 +280,6 @@ export default function SummarizePdfPage() {
               </p>
             </div>
           )}
-        </div>
       </div>
     </AiFeatureLayout>
   );

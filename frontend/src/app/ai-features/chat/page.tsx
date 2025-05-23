@@ -183,8 +183,7 @@ export default function ChatWithPdfPage() {
       title="Chat with PDF"
       description="Ask questions about your PDF documents and get AI-powered answers"
     >
-
-        <div className="flex flex-1 flex-col md:flex-row md:space-x-4">
+      <div className="flex flex-1 flex-col md:flex-row md:space-x-4">
           {/* PDF Upload/Preview Panel */}
           <div className="mb-4 w-full md:mb-0 md:w-1/3">
             <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -307,7 +306,6 @@ export default function ChatWithPdfPage() {
               </div>
             </div>
           </div>
-        </div>
       </div>
     </AiFeatureLayout>
   );
